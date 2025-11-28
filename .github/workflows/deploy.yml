@@ -4,15 +4,13 @@ on:
   push:
     branches:
       - master
-  workflow_dispatch: # Permite executar manualmente
+  workflow_dispatch:
 
-# Permissões necessárias para fazer deploy
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# Permitir apenas um deploy por vez
 concurrency:
   group: "pages"
   cancel-in-progress: false
@@ -23,6 +21,8 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+
+    # 🔹 TODOS os steps abaixo enxergam essas variáveis
     env:
       VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
       VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
@@ -43,36 +43,23 @@ jobs:
           cache: 'npm'
 
       - name: Instalar dependências
+        # se não tiver package-lock.json, troca para: npm install
         run: npm ci
-
-      - name: Validar secrets do Firebase
-        run: |
-          if [ -z "$VITE_FIREBASE_API_KEY" ] || [ -z "$VITE_FIREBASE_PROJECT_ID" ]; then
-            echo "Error: Required Firebase secrets are not set"
-            exit 1
-          fi
 
       - name: Criar arquivo .env com secrets
         run: |
-          echo "VITE_FIREBASE_API_KEY=${VITE_FIREBASE_API_KEY}" > .env
-          echo "VITE_FIREBASE_AUTH_DOMAIN=${VITE_FIREBASE_AUTH_DOMAIN}" >> .env
-          echo "VITE_FIREBASE_PROJECT_ID=${VITE_FIREBASE_PROJECT_ID}" >> .env
-          echo "VITE_FIREBASE_STORAGE_BUCKET=${VITE_FIREBASE_STORAGE_BUCKET}" >> .env
-          echo "VITE_FIREBASE_MESSAGING_SENDER_ID=${VITE_FIREBASE_MESSAGING_SENDER_ID}" >> .env
-          echo "VITE_FIREBASE_APP_ID=${VITE_FIREBASE_APP_ID}" >> .env
-          echo "VITE_FIREBASE_MEASUREMENT_ID=${VITE_FIREBASE_MEASUREMENT_ID}" >> .env
-          echo "✅ Arquivo .env criado:"
-          cat .env | sed 's/\(API_KEY=\).*/\1***/' | sed 's/\(APP_ID=\).*/\1***/'
+          cat <<EOF > .env
+          VITE_FIREBASE_API_KEY=${VITE_FIREBASE_API_KEY}
+          VITE_FIREBASE_AUTH_DOMAIN=${VITE_FIREBASE_AUTH_DOMAIN}
+          VITE_FIREBASE_PROJECT_ID=${VITE_FIREBASE_PROJECT_ID}
+          VITE_FIREBASE_STORAGE_BUCKET=${VITE_FIREBASE_STORAGE_BUCKET}
+          VITE_FIREBASE_MESSAGING_SENDER_ID=${VITE_FIREBASE_MESSAGING_SENDER_ID}
+          VITE_FIREBASE_APP_ID=${VITE_FIREBASE_APP_ID}
+          VITE_FIREBASE_MEASUREMENT_ID=${VITE_FIREBASE_MEASUREMENT_ID}
+          EOF
+          echo ".env criado"
 
       - name: Build do projeto
-        env:
-          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
-          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
-          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
-          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
-          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
-          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
-          VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.VITE_FIREBASE_MEASUREMENT_ID }}
         run: npm run build
 
       - name: Configurar Pages
@@ -81,7 +68,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './dist'
+          path: ./dist
 
       - name: Deploy para GitHub Pages
         id: deployment

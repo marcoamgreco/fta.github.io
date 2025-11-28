@@ -1,7 +1,8 @@
 import React, { useState, useCallback, useEffect } from "react";
-import type { TreeNode, FTANodeType } from "./scenarios";
+import type { TreeNode, FTANodeType, Scenario } from "./scenarios";
 import FTADiagram from "./FTADiagram";
 import { useScenarios } from "./hooks/useScenarios";
+import { saveScenarioToFirestore, isFirebaseConfigured } from "./firebase/scenariosService";
 
 type Evidence = {
   id: string;
@@ -17,7 +18,7 @@ type NodeEvidence = {
 
 const App: React.FC = () => {
   // Hook para carregar cenários (Firebase ou fallback local)
-  const { scenariosList, loading: scenariosLoading } = useScenarios();
+  const { scenariosList, loading: scenariosLoading, refreshScenarios } = useScenarios();
 
   const [selectedScenarioId, setSelectedScenarioId] = useState<string>("");
   const [treeData, setTreeData] = useState<TreeNode | null>(null);
@@ -28,6 +29,10 @@ const App: React.FC = () => {
   const [isResizing, setIsResizing] = useState<boolean>(false);
   const [rightSidebarWidth, setRightSidebarWidth] = useState<number>(300);
   const [isRightResizing, setIsRightResizing] = useState<boolean>(false);
+  const [isNewScenarioModalOpen, setIsNewScenarioModalOpen] = useState<boolean>(false);
+  const [newScenarioTitle, setNewScenarioTitle] = useState<string>("");
+  const [newScenarioId, setNewScenarioId] = useState<string>("");
+  const [isCreatingScenario, setIsCreatingScenario] = useState<boolean>(false);
 
   // Inicializar selectedScenarioId quando cenários carregarem
   useEffect(() => {
@@ -48,8 +53,28 @@ const App: React.FC = () => {
     }
   }, [selectedScenarioId, scenariosList]);
 
+  // Função helper para salvar o cenário atual no Firebase
+  const saveCurrentScenario = useCallback(async (updatedTreeData: TreeNode) => {
+    if (!isFirebaseConfigured() || !selectedScenarioId) {
+      return;
+    }
 
-  const handleNodeClick = useCallback((nodeId: string) => {
+    try {
+      const currentScenario = scenariosList.find(s => s.id === selectedScenarioId);
+      if (currentScenario) {
+        const updatedScenario: Scenario = {
+          ...currentScenario,
+          rootNode: updatedTreeData
+        };
+        await saveScenarioToFirestore(updatedScenario);
+        console.log('✅ Cenário salvo no Firebase');
+      }
+    } catch (error) {
+      console.error('❌ Erro ao salvar cenário no Firebase:', error);
+    }
+  }, [scenariosList, selectedScenarioId]);
+
+  const handleNodeClick = useCallback(async (nodeId: string) => {
     // Check if it's a gate node
     if (nodeId.endsWith('-gate')) {
       const realNodeId = nodeId.replace('-gate', '');
@@ -72,6 +97,7 @@ const App: React.FC = () => {
 
       if (toggleGate(newTree)) {
         setTreeData(newTree);
+        await saveCurrentScenario(newTree);
       }
       return;
     }
@@ -95,7 +121,7 @@ const App: React.FC = () => {
       };
       setEvidenceData(new Map(evidenceData.set(nodeId, newEvidence)));
     }
-  }, [evidenceData, treeData]);
+  }, [evidenceData, treeData, saveCurrentScenario]);
 
   const handleNodeDoubleClick = useCallback(() => {
     // Double click now does nothing - editing is done via toolbar button
@@ -139,7 +165,7 @@ const App: React.FC = () => {
     return null;
   };
 
-  const handleEditLabel = (nodeId: string, newLabel: string) => {
+  const handleEditLabel = async (nodeId: string, newLabel: string) => {
     if (!treeData) return;
 
     const newTree = JSON.parse(JSON.stringify(treeData));
@@ -159,9 +185,10 @@ const App: React.FC = () => {
 
     updateNodeLabel(newTree);
     setTreeData(newTree);
+    await saveCurrentScenario(newTree);
   };
 
-  const handleAddNode = (parentId: string, type: FTANodeType) => {
+  const handleAddNode = async (parentId: string, type: FTANodeType) => {
     if (!treeData) return;
 
     const newTree = JSON.parse(JSON.stringify(treeData));
@@ -177,10 +204,11 @@ const App: React.FC = () => {
       };
       parent.children.push(newNode);
       setTreeData(newTree);
+      await saveCurrentScenario(newTree);
     }
   };
 
-  const handleRemoveNode = (nodeId: string) => {
+  const handleRemoveNode = async (nodeId: string) => {
     if (!treeData) return;
 
     // Cannot remove root
@@ -209,6 +237,71 @@ const App: React.FC = () => {
     if (removeNode(newTree, nodeId)) {
       setTreeData(newTree);
       if (selectedNodeId === nodeId) setSelectedNodeId(null);
+      await saveCurrentScenario(newTree);
+    }
+  };
+
+  // Função para criar novo cenário
+  const handleCreateNewScenario = async () => {
+    if (!newScenarioTitle.trim() || !newScenarioId.trim()) {
+      alert("Por favor, preencha o título e o ID do cenário.");
+      return;
+    }
+
+    // Verificar se o ID já existe
+    if (scenariosList.some(s => s.id === newScenarioId)) {
+      alert("Já existe um cenário com este ID. Por favor, escolha outro.");
+      return;
+    }
+
+    setIsCreatingScenario(true);
+
+    try {
+      // Criar nó raiz inicial com o nome do cenário
+      const rootNode: TreeNode = {
+        id: `root-${newScenarioId}`,
+        label: newScenarioTitle.trim(),
+        type: "event",
+        gateType: "OR",
+        description: "",
+        children: []
+      };
+
+      const newScenario: Scenario = {
+        id: newScenarioId,
+        title: newScenarioTitle.trim(),
+        rootNode: rootNode
+      };
+
+      // Salvar no Firebase se estiver configurado
+      if (isFirebaseConfigured()) {
+        await saveScenarioToFirestore(newScenario);
+        // Recarregar lista de cenários
+        if (refreshScenarios) {
+          await refreshScenarios();
+        }
+      } else {
+        alert("⚠️ Firebase não está configurado. O cenário não foi salvo.");
+        setIsCreatingScenario(false);
+        setIsNewScenarioModalOpen(false);
+        return;
+      }
+
+      // Selecionar o novo cenário
+      setSelectedScenarioId(newScenarioId);
+      setTreeData(rootNode);
+
+      // Limpar formulário e fechar modal
+      setNewScenarioTitle("");
+      setNewScenarioId("");
+      setIsNewScenarioModalOpen(false);
+
+      alert("✅ Cenário criado com sucesso!");
+    } catch (error) {
+      console.error("Erro ao criar cenário:", error);
+      alert("❌ Erro ao criar cenário. Verifique o console para mais detalhes.");
+    } finally {
+      setIsCreatingScenario(false);
     }
   };
 
@@ -401,6 +494,39 @@ const App: React.FC = () => {
               );
               })
             )}
+            <li style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid #334155" }}>
+              <button
+                onClick={() => setIsNewScenarioModalOpen(true)}
+                style={{
+                  width: "100%",
+                  textAlign: "center",
+                  padding: "10px 12px",
+                  background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                  color: "#ffffff",
+                  border: "none",
+                  borderRadius: "6px",
+                  cursor: "pointer",
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  transition: "all 0.2s",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "6px",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-1px)";
+                  e.currentTarget.style.boxShadow = "0 4px 8px rgba(16, 185, 129, 0.4)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow = "none";
+                }}
+              >
+                <span>➕</span>
+                Novo Cenário
+              </button>
+            </li>
           </ul>
         </nav>
 
@@ -458,7 +584,7 @@ const App: React.FC = () => {
             borderBottom: "1px solid #e2e8f0",
             display: "flex",
             alignItems: "center",
-            padding: "0 32px",
+            padding: "0 16px",
             justifyContent: "space-between",
             flexShrink: 0,
           }}
@@ -480,6 +606,7 @@ const App: React.FC = () => {
                     letterSpacing: "0.05em",
                     boxShadow: "0 2px 8px rgba(59, 130, 246, 0.3)",
                     border: "1px solid rgba(255, 255, 255, 0.2)",
+                    marginLeft: 0,
                   }}
                 >
                   <span style={{ fontSize: "14px" }}>🎯</span>
@@ -830,6 +957,170 @@ const App: React.FC = () => {
             </>
           ) : null}
       </aside>
+
+      {/* Modal de Novo Cenário */}
+      {isNewScenarioModalOpen && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0, 0, 0, 0.7)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 10000,
+          }}
+          onClick={() => !isCreatingScenario && setIsNewScenarioModalOpen(false)}
+        >
+          <div
+            style={{
+              background: "#1e293b",
+              borderRadius: "12px",
+              padding: "24px",
+              width: "90%",
+              maxWidth: "500px",
+              boxShadow: "0 20px 60px rgba(0, 0, 0, 0.5)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2
+              style={{
+                margin: "0 0 20px 0",
+                fontSize: "18px",
+                fontWeight: 600,
+                color: "#f8fafc",
+              }}
+            >
+              Criar Novo Cenário
+            </h2>
+
+            <div style={{ marginBottom: "16px" }}>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: "8px",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  color: "#cbd5e1",
+                }}
+              >
+                Título do Cenário *
+              </label>
+              <input
+                type="text"
+                value={newScenarioTitle}
+                onChange={(e) => setNewScenarioTitle(e.target.value)}
+                placeholder="Ex: Falha no Sistema de Refrigeração"
+                style={{
+                  width: "100%",
+                  padding: "10px 12px",
+                  background: "#0f172a",
+                  border: "1px solid #334155",
+                  borderRadius: "6px",
+                  color: "#f8fafc",
+                  fontSize: "14px",
+                  boxSizing: "border-box",
+                }}
+                disabled={isCreatingScenario}
+              />
+            </div>
+
+            <div style={{ marginBottom: "20px" }}>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: "8px",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  color: "#cbd5e1",
+                }}
+              >
+                ID do Cenário *
+              </label>
+              <input
+                type="text"
+                value={newScenarioId}
+                onChange={(e) => setNewScenarioId(e.target.value.toLowerCase().replace(/\s+/g, "-"))}
+                placeholder="Ex: falha-refrigeracao"
+                style={{
+                  width: "100%",
+                  padding: "10px 12px",
+                  background: "#0f172a",
+                  border: "1px solid #334155",
+                  borderRadius: "6px",
+                  color: "#f8fafc",
+                  fontSize: "14px",
+                  boxSizing: "border-box",
+                }}
+                disabled={isCreatingScenario}
+              />
+              <div
+                style={{
+                  marginTop: "6px",
+                  fontSize: "11px",
+                  color: "#64748b",
+                }}
+              >
+                O ID será convertido automaticamente para minúsculas e hífens
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                gap: "12px",
+                justifyContent: "flex-end",
+              }}
+            >
+              <button
+                onClick={() => {
+                  setIsNewScenarioModalOpen(false);
+                  setNewScenarioTitle("");
+                  setNewScenarioId("");
+                }}
+                disabled={isCreatingScenario}
+                style={{
+                  padding: "10px 20px",
+                  background: "transparent",
+                  color: "#cbd5e1",
+                  border: "1px solid #334155",
+                  borderRadius: "6px",
+                  cursor: isCreatingScenario ? "not-allowed" : "pointer",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  opacity: isCreatingScenario ? 0.5 : 1,
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleCreateNewScenario}
+                disabled={isCreatingScenario || !newScenarioTitle.trim() || !newScenarioId.trim()}
+                style={{
+                  padding: "10px 20px",
+                  background: isCreatingScenario || !newScenarioTitle.trim() || !newScenarioId.trim()
+                    ? "#475569"
+                    : "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                  color: "#ffffff",
+                  border: "none",
+                  borderRadius: "6px",
+                  cursor: isCreatingScenario || !newScenarioTitle.trim() || !newScenarioId.trim()
+                    ? "not-allowed"
+                    : "pointer",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  opacity: isCreatingScenario || !newScenarioTitle.trim() || !newScenarioId.trim() ? 0.5 : 1,
+                }}
+              >
+                {isCreatingScenario ? "Criando..." : "Criar Cenário"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
