@@ -277,9 +277,7 @@ const App: React.FC = () => {
       if (isFirebaseConfigured()) {
         await saveScenarioToFirestore(newScenario);
         // Recarregar lista de cenários
-        if (refreshScenarios) {
-          await refreshScenarios();
-        }
+        await refreshScenarios();
       } else {
         alert("⚠️ Firebase não está configurado. O cenário não foi salvo.");
         setIsCreatingScenario(false);
