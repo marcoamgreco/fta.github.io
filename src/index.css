@@ -78,3 +78,22 @@ button:focus-visible {
   stroke-dasharray: 8 4;
   animation: dash 1s linear infinite;
 }
+
+/* Spin Animation for Reorganize Button */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.reorganize-icon {
+  animation: spin 2s linear infinite;
+  animation-play-state: paused;
+}
+
+button:hover .reorganize-icon {
+  animation-play-state: running;
+}

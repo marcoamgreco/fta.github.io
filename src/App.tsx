@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from "react";
-import { scenarios } from "./scenarios";
 import type { TreeNode, FTANodeType } from "./scenarios";
 import FTADiagram from "./FTADiagram";
+import { useScenarios } from "./hooks/useScenarios";
 
 type Evidence = {
   id: string;
@@ -16,28 +16,37 @@ type NodeEvidence = {
 };
 
 const App: React.FC = () => {
-  const [selectedScenarioId, setSelectedScenarioId] = useState<string>(
-    scenarios[0]?.id || ""
-  );
+  // Hook para carregar cenários (Firebase ou fallback local)
+  const { scenariosList, loading: scenariosLoading } = useScenarios();
+
+  const [selectedScenarioId, setSelectedScenarioId] = useState<string>("");
   const [treeData, setTreeData] = useState<TreeNode | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
   const [evidenceData, setEvidenceData] = useState<Map<string, NodeEvidence>>(new Map());
-  const [sidebarWidth, setSidebarWidth] = useState<number>(280);
+  const [sidebarWidth, setSidebarWidth] = useState<number>(300);
   const [isResizing, setIsResizing] = useState<boolean>(false);
-  const [rightSidebarWidth, setRightSidebarWidth] = useState<number>(350);
+  const [rightSidebarWidth, setRightSidebarWidth] = useState<number>(300);
   const [isRightResizing, setIsRightResizing] = useState<boolean>(false);
 
+  // Inicializar selectedScenarioId quando cenários carregarem
+  useEffect(() => {
+    if (!scenariosLoading && scenariosList.length > 0 && !selectedScenarioId) {
+      setSelectedScenarioId(scenariosList[0].id);
+    }
+  }, [scenariosLoading, scenariosList, selectedScenarioId]);
 
   // Load initial tree data when scenario changes
   useEffect(() => {
-    const scenario = scenarios.find((s) => s.id === selectedScenarioId);
-    if (scenario) {
-      // Deep copy to avoid mutating the original mock data directly during this session
-      setTreeData(JSON.parse(JSON.stringify(scenario.rootNode)));
-      setSelectedNodeId(null);
+    if (selectedScenarioId && scenariosList.length > 0) {
+      const scenario = scenariosList.find((s) => s.id === selectedScenarioId);
+      if (scenario) {
+        // Deep copy to avoid mutating the original mock data directly during this session
+        setTreeData(JSON.parse(JSON.stringify(scenario.rootNode)));
+        setSelectedNodeId(null);
+      }
     }
-  }, [selectedScenarioId]);
+  }, [selectedScenarioId, scenariosList]);
 
 
   const handleNodeClick = useCallback((nodeId: string) => {
@@ -96,12 +105,15 @@ const App: React.FC = () => {
     const nodeEv = evidenceData.get(nodeId);
     if (!nodeEv) return;
 
-    const updated = { ...nodeEv };
-    const list = isCounterEvidence ? updated.counterEvidences : updated.evidences;
-    const evidence = list.find(e => e.id === evidenceId);
-    if (evidence) {
-      evidence.checked = !evidence.checked;
-    }
+    const updated: NodeEvidence = {
+      ...nodeEv,
+      evidences: nodeEv.evidences.map(e =>
+        !isCounterEvidence && e.id === evidenceId ? { ...e, checked: !e.checked } : e
+      ),
+      counterEvidences: nodeEv.counterEvidences.map(e =>
+        isCounterEvidence && e.id === evidenceId ? { ...e, checked: !e.checked } : e
+      ),
+    };
 
     setEvidenceData(new Map(evidenceData.set(nodeId, updated)));
   };
@@ -198,6 +210,127 @@ const App: React.FC = () => {
       setTreeData(newTree);
       if (selectedNodeId === nodeId) setSelectedNodeId(null);
     }
+  };
+
+  // Export tree data as TypeScript code for scenarios.ts
+  const exportScenarioAsCode = () => {
+    if (!treeData) {
+      alert("Nenhuma árvore para exportar.");
+      return;
+    }
+
+    const scenario = scenariosList.find(s => s.id === selectedScenarioId);
+    if (!scenario) {
+      alert("Cenário não encontrado.");
+      return;
+    }
+
+    // Function to format TreeNode as TypeScript code
+    const formatTreeNode = (node: TreeNode, indent: number = 4): string => {
+      const spaces = ' '.repeat(indent);
+      let code = `{\n${spaces}    id: "${node.id}",\n${spaces}    label: "${node.label.replace(/"/g, '\\"')}",\n${spaces}    type: "${node.type}",`;
+
+      if (node.gateType) {
+        code += `\n${spaces}    gateType: "${node.gateType}",`;
+      }
+
+      if (node.description) {
+        code += `\n${spaces}    description: "${node.description.replace(/"/g, '\\"')}",`;
+      }
+
+      if (node.children && node.children.length > 0) {
+        code += `\n${spaces}    children: [\n`;
+        node.children.forEach((child, index) => {
+          code += formatTreeNode(child, indent + 4);
+          if (index < node.children!.length - 1) {
+            code += ',';
+          }
+          code += '\n';
+        });
+        code += `${spaces}    ]`;
+      }
+
+      code += `\n${spaces}}`;
+      return code;
+    };
+
+    const scenarioCode = `{
+        id: "${scenario.id}",
+        title: "${scenario.title}",
+        rootNode: ${formatTreeNode(treeData, 4)}
+    }`;
+
+    // Copy to clipboard
+    navigator.clipboard.writeText(scenarioCode).then(() => {
+      alert("Código do cenário copiado para a área de transferência!\n\nVocê pode colar no arquivo scenarios.ts substituindo o cenário correspondente.");
+    }).catch(() => {
+      // Fallback: create a textarea and copy
+      const textarea = document.createElement('textarea');
+      textarea.value = scenarioCode;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      alert("Código do cenário copiado para a área de transferência!\n\nVocê pode colar no arquivo scenarios.ts substituindo o cenário correspondente.");
+    });
+  };
+
+  // Download scenario as TypeScript file
+  const downloadScenarioAsFile = () => {
+    if (!treeData) {
+      alert("Nenhuma árvore para exportar.");
+      return;
+    }
+
+    const scenario = scenariosList.find(s => s.id === selectedScenarioId);
+    if (!scenario) {
+      alert("Cenário não encontrado.");
+      return;
+    }
+
+    const formatTreeNode = (node: TreeNode, indent: number = 4): string => {
+      const spaces = ' '.repeat(indent);
+      let code = `{\n${spaces}    id: "${node.id}",\n${spaces}    label: "${node.label.replace(/"/g, '\\"')}",\n${spaces}    type: "${node.type}",`;
+
+      if (node.gateType) {
+        code += `\n${spaces}    gateType: "${node.gateType}",`;
+      }
+
+      if (node.description) {
+        code += `\n${spaces}    description: "${node.description.replace(/"/g, '\\"')}",`;
+      }
+
+      if (node.children && node.children.length > 0) {
+        code += `\n${spaces}    children: [\n`;
+        node.children.forEach((child, index) => {
+          code += formatTreeNode(child, indent + 4);
+          if (index < node.children!.length - 1) {
+            code += ',';
+          }
+          code += '\n';
+        });
+        code += `${spaces}    ]`;
+      }
+
+      code += `\n${spaces}}`;
+      return code;
+    };
+
+    const scenarioCode = `{
+        id: "${scenario.id}",
+        title: "${scenario.title}",
+        rootNode: ${formatTreeNode(treeData, 4)}
+    }`;
+
+    const blob = new Blob([scenarioCode], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${scenario.id}.ts`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   // Sidebar resize handlers
@@ -347,7 +480,16 @@ const App: React.FC = () => {
             Cenários Disponíveis
           </div>
           <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-            {scenarios.map((scenario) => {
+            {scenariosLoading ? (
+              <li style={{ padding: "12px", color: "#64748b", fontSize: "11px", textAlign: "center" }}>
+                Carregando cenários...
+              </li>
+            ) : scenariosList.length === 0 ? (
+              <li style={{ padding: "12px", color: "#ef4444", fontSize: "11px", textAlign: "center" }}>
+                Nenhum cenário disponível
+              </li>
+            ) : (
+              scenariosList.map((scenario) => {
               const isActive = scenario.id === selectedScenarioId;
               return (
                 <li key={scenario.id} style={{ marginBottom: "4px" }}>
@@ -377,7 +519,8 @@ const App: React.FC = () => {
                   </button>
                 </li>
               );
-            })}
+              })
+            )}
           </ul>
         </nav>
 
@@ -463,7 +606,7 @@ const App: React.FC = () => {
                   cenário ativo
                 </span>
                 <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 600 }}>
-                  {scenarios.find(s => s.id === selectedScenarioId)?.title || "Árvore Importada"}
+                  {scenariosList.find(s => s.id === selectedScenarioId)?.title || "Árvore Importada"}
                 </h2>
               </div>
             ) : (
@@ -472,6 +615,70 @@ const App: React.FC = () => {
               </h2>
             )}
           </div>
+          {treeData && (
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                onClick={exportScenarioAsCode}
+                title="Copiar código do cenário para área de transferência"
+                style={{
+                  padding: '8px 14px',
+                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'all 0.2s',
+                  boxShadow: '0 2px 6px rgba(16, 185, 129, 0.3)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                  e.currentTarget.style.boxShadow = '0 4px 8px rgba(16, 185, 129, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 2px 6px rgba(16, 185, 129, 0.3)';
+                }}
+              >
+                <span>📋</span>
+                Copiar Código
+              </button>
+              <button
+                onClick={downloadScenarioAsFile}
+                title="Baixar código do cenário como arquivo"
+                style={{
+                  padding: '8px 14px',
+                  background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'all 0.2s',
+                  boxShadow: '0 2px 6px rgba(99, 102, 241, 0.3)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                  e.currentTarget.style.boxShadow = '0 4px 8px rgba(99, 102, 241, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 2px 6px rgba(99, 102, 241, 0.3)';
+                }}
+              >
+                <span>💾</span>
+                Baixar
+              </button>
+            </div>
+          )}
 
         </header>
 
@@ -633,10 +840,9 @@ const App: React.FC = () => {
                         fontSize: "12px",
                         fontWeight: 600,
                         color: "#f8fafc",
-
                         letterSpacing: "0.05em",
                       }}>
-                        ✓ Evidências
+                        🔍 Evidências
                       </h4>
                       <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                         {evidenceData.get(selectedNodeId)!.evidences.map((evidence) => (
@@ -679,6 +885,8 @@ const App: React.FC = () => {
                               lineHeight: "1.4",
                               color: evidence.checked ? "#64748b" : "#cbd5e1",
                               textDecoration: evidence.checked ? "line-through" : "none",
+                              textDecorationLine: evidence.checked ? "line-through" : "none",
+                              textDecorationThickness: evidence.checked ? "1px" : "0px",
                             }}>
                               {evidence.text}
                             </span>
@@ -694,10 +902,9 @@ const App: React.FC = () => {
                         fontSize: "12px",
                         fontWeight: 600,
                         color: "#f8fafc",
-                        textTransform: "uppercase",
                         letterSpacing: "0.05em",
                       }}>
-                        ✗ Contra-Evidências
+                        🛡️ Contra-Evidências
                       </h4>
                       <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                         {evidenceData.get(selectedNodeId)!.counterEvidences.map((evidence) => (
@@ -740,6 +947,8 @@ const App: React.FC = () => {
                               lineHeight: "1.4",
                               color: evidence.checked ? "#64748b" : "#cbd5e1",
                               textDecoration: evidence.checked ? "line-through" : "none",
+                              textDecorationLine: evidence.checked ? "line-through" : "none",
+                              textDecorationThickness: evidence.checked ? "1px" : "0px",
                             }}>
                               {evidence.text}
                             </span>

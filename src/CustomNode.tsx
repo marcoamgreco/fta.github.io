@@ -6,6 +6,8 @@ type CustomNodeData = {
   label: string;
   isBasic: boolean;
   status?: 'complete' | 'partial' | 'none';
+  isRoot?: boolean;
+  parentIsComplete?: boolean;
   onAddEvent: () => void;
   onAddBasicEvent: () => void;
   onEdit: () => void;
@@ -77,8 +79,17 @@ const CustomNode: React.FC<NodeProps<CustomNodeData>> = ({ data, selected }) => 
     }
   };
 
+  // Border logic: selected > status colors > root/parent complete (black) > default gray
+  const getBorderColor = (): string => {
+    if (selected) return '#3b82f6';
+    if (data.status === 'complete') return '#10b981';
+    if (data.status === 'partial') return '#f59e0b';
+    if (data.isRoot || data.parentIsComplete) return '#000';
+    return '#ccc';
+  };
+
   const baseStyle: React.CSSProperties = {
-    padding: '10px 20px',
+    padding: '10px 10px',
     fontSize: '10px',
     textAlign: 'center',
     background: data.status === 'complete'
@@ -86,11 +97,7 @@ const CustomNode: React.FC<NodeProps<CustomNodeData>> = ({ data, selected }) => 
       : data.status === 'partial'
         ? '#fef3c7'
         : '#fff',
-    border: selected ? '2px solid #3b82f6' : data.status === 'complete'
-      ? '2px solid #10b981'
-      : data.status === 'partial'
-        ? '2px solid #f59e0b'
-        : '2px solid #333',
+    border: `2px solid ${getBorderColor()}`,
     boxShadow: selected ? '0 0 0 4px rgba(59, 130, 246, 0.2)' : 'none',
     position: 'relative',
     transition: 'all 0.2s',
@@ -169,15 +176,14 @@ const CustomNode: React.FC<NodeProps<CustomNodeData>> = ({ data, selected }) => 
           <div
             style={{
               position: 'absolute',
-              top: '-45px',
-              left: '50%',
-              transform: 'translateX(-50%)',
+              top: '-38px',
+              right: '0x',
               display: 'flex',
-              gap: '4px',
+              gap: '3px',
               background: 'white',
-              padding: '6px',
-              borderRadius: '8px',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+              padding: '4px',
+              borderRadius: '6px',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
               zIndex: 1000,
             }}
             onMouseEnter={handleMouseEnter}
@@ -192,12 +198,12 @@ const CustomNode: React.FC<NodeProps<CustomNodeData>> = ({ data, selected }) => 
                   }}
                   title="Adicionar Evento"
                   style={{
-                    padding: '8px 10px',
-                    fontSize: '16px',
+                    padding: '4px 6px',
+                    fontSize: '12px',
                     color: '#1e40af',
                     background: '#dbeafe',
                     border: 'none',
-                    borderRadius: '6px',
+                    borderRadius: '4px',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
@@ -221,12 +227,12 @@ const CustomNode: React.FC<NodeProps<CustomNodeData>> = ({ data, selected }) => 
                   }}
                   title="Adicionar Causa Básica"
                   style={{
-                    padding: '8px 10px',
-                    fontSize: '16px',
+                    padding: '4px 6px',
+                    fontSize: '12px',
                     color: '#166534',
                     background: '#dcfce7',
                     border: 'none',
-                    borderRadius: '6px',
+                    borderRadius: '4px',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
@@ -252,12 +258,12 @@ const CustomNode: React.FC<NodeProps<CustomNodeData>> = ({ data, selected }) => 
               }}
               title="Editar"
               style={{
-                padding: '8px 10px',
-                fontSize: '16px',
+                padding: '4px 6px',
+                fontSize: '12px',
                 color: '#7c3aed',
                 background: '#f3e8ff',
                 border: 'none',
-                borderRadius: '6px',
+                borderRadius: '4px',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
@@ -281,12 +287,12 @@ const CustomNode: React.FC<NodeProps<CustomNodeData>> = ({ data, selected }) => 
               }}
               title="Remover"
               style={{
-                padding: '8px 10px',
-                fontSize: '16px',
+                padding: '4px 6px',
+                fontSize: '12px',
                 color: '#991b1b',
                 background: '#fee2e2',
                 border: 'none',
-                borderRadius: '6px',
+                borderRadius: '4px',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',

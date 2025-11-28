@@ -115,7 +115,7 @@ export const scenarios: Scenario[] = [
     },
     {
         id: "fcc-catalyst-loss",
-        title: "Perdas Elevadas de Catalisador",
+        title: "Perdas de Catalisador pelo Separador",
         rootNode: {
             id: "root-loss",
             label:

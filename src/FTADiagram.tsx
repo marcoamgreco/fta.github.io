@@ -19,7 +19,7 @@ import AnimatedEdge from './AnimatedEdge';
 const gateNodeStyle = {
     padding: '10px 20px',
     borderRadius: '0px 0px 20px 20px',
-    border: '2px solid #333',
+    border: '2px solid #ccc', // Default gray - will be overridden based on parent status
     fontSize: '10px',
     textAlign: 'center' as const,
     width: 60,
@@ -126,6 +126,18 @@ const FTADiagram: React.FC<FTADiagramProps> = ({
                 const nodeId = node.id;
                 const isBasic = node.type === 'basic_event';
                 const status = getNodeStatus?.(nodeId) || 'none';
+                const isRoot = !parentId;
+
+                // Check parent status if not root
+                let parentIsComplete = false;
+                if (!isRoot && parentId) {
+                    let parentNodeId = parentId;
+                    if (parentId.endsWith('-gate')) {
+                        parentNodeId = parentId.replace('-gate', '');
+                    }
+                    const parentStatus = getNodeStatus?.(parentNodeId) || 'none';
+                    parentIsComplete = parentStatus === 'complete';
+                }
 
                 nodes.push({
                     id: nodeId,
@@ -137,6 +149,8 @@ const FTADiagram: React.FC<FTADiagramProps> = ({
                         height: isBasic ? 100 : 50,
                         isBasic,
                         status,
+                        isRoot,
+                        parentIsComplete,
                         onAddEvent: () => onAddNode?.(nodeId, 'event'),
                         onAddBasicEvent: () => onAddNode?.(nodeId, 'basic_event'),
                         onEdit: () => { }, // Not used anymore
@@ -148,12 +162,23 @@ const FTADiagram: React.FC<FTADiagramProps> = ({
                 });
 
                 if (parentId) {
+                    // Check if parent is a gate (to find the original parent node)
+                    let parentNodeId = parentId;
+                    if (parentId.endsWith('-gate')) {
+                        parentNodeId = parentId.replace('-gate', '');
+                    }
+                    const parentStatus = getNodeStatus?.(parentNodeId) || 'none';
+                    const isParentComplete = parentStatus === 'complete';
+
                     edges.push({
                         id: `${parentId}-${nodeId}`,
                         source: parentId,
                         target: nodeId,
                         type: 'animated',
                         markerEnd: { type: MarkerType.ArrowClosed },
+                        data: {
+                            strokeColor: isParentComplete ? '#000' : '#bbb',
+                        },
                     });
                 }
 
@@ -161,19 +186,32 @@ const FTADiagram: React.FC<FTADiagramProps> = ({
                     const gateId = `${nodeId}-gate`;
                     const gateType = node.gateType || 'OR';
 
+                    // Gate border color: black ONLY if the parent node (nodeId) has ALL evidences checked
+                    // Gates should start gray (#ccc) and only turn black when parent evidence is complete
+                    // Explicitly check that status is exactly 'complete' (all evidences checked)
+                    const isNodeComplete = status === 'complete';
+                    const gateBorderColor = isNodeComplete ? '#000' : '#ccc';
+
                     nodes.push({
                         id: gateId,
                         type: 'default',
                         data: { label: gateType, width: 60, height: 40 },
                         position: { x: 0, y: 0 },
-                        style: gateType === 'AND' ? andGateStyle : gateNodeStyle,
+                        style: {
+                            ...(gateType === 'AND' ? andGateStyle : gateNodeStyle),
+                            border: `2px solid ${gateBorderColor}`,
+                        },
                     });
 
+                    // Edge from node to gate - black if node is complete
                     edges.push({
                         id: `${nodeId}-${gateId}`,
                         source: nodeId,
                         target: gateId,
                         type: 'animated',
+                        data: {
+                            strokeColor: isNodeComplete ? '#000' : '#bbb',
+                        },
                     });
 
                     node.children.forEach((child) => {
@@ -237,8 +275,9 @@ const FTADiagram: React.FC<FTADiagramProps> = ({
             >
                 <Controls />
                 <Background color="#aaa" gap={16} />
-                <Panel position="top-right">
-                    <button
+                <Panel position="bottom-right">
+                    <div style={{ marginBottom: '10px' }}>
+                        <button
                         onClick={() => {
                             const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(
                                 nodes,
@@ -247,23 +286,59 @@ const FTADiagram: React.FC<FTADiagramProps> = ({
                             );
                             setNodes([...layoutedNodes]);
                             setEdges([...layoutedEdges]);
+                            reactFlowInstanceRef.current?.fitView({ duration: 300, padding: 0.2 });
                         }}
                         style={{
                             padding: '8px 12px',
-                            background: 'white',
-                            border: '1px solid #ccc',
-                            borderRadius: '4px',
+                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                            border: 'none',
+                            borderRadius: '8px',
                             cursor: 'pointer',
-                            fontSize: '12px',
-                            fontWeight: 'bold',
-                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                            fontSize: '9px',
+                            fontWeight: 600,
+                            color: '#ffffff',
+                            boxShadow: '0 4px 12px rgba(102, 126, 234, 0.4)',
                             display: 'flex',
                             alignItems: 'center',
                             gap: '6px',
+                            transition: 'all 0.3s ease',
+                            fontFamily: 'system-ui, -apple-system, sans-serif',
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'translateY(-2px)';
+                            e.currentTarget.style.boxShadow = '0 6px 16px rgba(102, 126, 234, 0.5)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'translateY(0)';
+                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.4)';
+                        }}
+                        onMouseDown={(e) => {
+                            e.currentTarget.style.transform = 'translateY(0)';
+                        }}
+                        onMouseUp={(e) => {
+                            e.currentTarget.style.transform = 'translateY(-2px)';
                         }}
                     >
-                        <span>🔄</span> Reorganizar Layout
+                        <svg
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            style={{
+                                display: 'inline-block',
+                                transition: 'transform 0.3s ease',
+                            }}
+                            className="reorganize-icon"
+                        >
+                            <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
+                        </svg>
+                        <span>Reorganizar Árvore</span>
                     </button>
+                    </div>
                 </Panel>
             </ReactFlow>
         </div>
