@@ -953,7 +953,7 @@ const App: React.FC = () => {
                                     marginRight: "6px",
                                     opacity: isActive ? 1 : 0.7,
                                   }}>
-                                    {hasChildren ? "📁" : "📄"}
+                                    🗃️
                                   </span>
 
                                   {/* File/Folder Name */}
