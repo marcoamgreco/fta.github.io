@@ -851,47 +851,56 @@ const App: React.FC = () => {
                 });
 
                 return (
-                  <div>
+                  <div style={{ paddingLeft: "8px" }}>
                     {sortedTechs.map((tech) => (
-                      <div key={tech} style={{ marginBottom: "28px" }}>
+                      <div key={tech} style={{ marginBottom: "16px" }}>
+                        {/* Folder Header */}
                         <div
                           style={{
                             fontSize: "11px",
-                            fontWeight: 700,
-                            textTransform: "uppercase",
+                            fontWeight: 600,
                             color: "#94a3b8",
-                            marginBottom: "14px",
-                            paddingLeft: "12px",
-                            letterSpacing: "0.1em",
+                            marginBottom: "6px",
+                            paddingLeft: "20px",
                             display: "flex",
                             alignItems: "center",
-                            gap: "10px",
-                            position: "relative",
+                            gap: "6px",
+                            userSelect: "none",
                           }}
                         >
-                          <div style={{
-                            position: "absolute",
-                            left: 0,
-                            width: "3px",
-                            height: "16px",
-                            background: "linear-gradient(180deg, #3b82f6 0%, #8b5cf6 100%)",
-                            borderRadius: "2px",
-                          }} />
-                          <span style={{ fontSize: "14px" }}>🌿</span>
-                          {tech}
+                          <span style={{ fontSize: "14px", display: "flex", alignItems: "center" }}>📁</span>
+                          <span>{tech}</span>
                         </div>
                         <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-                          {groupedByTech[tech].map((scenario) => {
+                          {groupedByTech[tech].map((scenario, index) => {
                             const isActive = scenario.id === selectedScenarioId;
                             const scenarioAnalyses = analysesByParent[scenario.id] || [];
-                            // const isEditing = editingAnalysisTitle?.id === scenario.id;
                             const isExpanded = expandedTrees.has(scenario.id);
                             const hasChildren = scenarioAnalyses.length > 0;
+                            const isLastInGroup = index === groupedByTech[tech].length - 1;
 
                             return (
-                              <li key={scenario.id} style={{ marginBottom: "8px" }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                                  {/* Botão de expandir/colapsar */}
+                              <li key={scenario.id} style={{ marginBottom: "2px" }}>
+                                <div style={{ display: "flex", alignItems: "center", position: "relative" }}>
+                                  {/* Tree lines */}
+                                  <div style={{
+                                    position: "absolute",
+                                    left: "8px",
+                                    top: 0,
+                                    bottom: isLastInGroup ? "50%" : 0,
+                                    width: "1px",
+                                    background: "#334155",
+                                  }} />
+                                  <div style={{
+                                    position: "absolute",
+                                    left: "8px",
+                                    top: "12px",
+                                    width: "12px",
+                                    height: "1px",
+                                    background: "#334155",
+                                  }} />
+
+                                  {/* Chevron for expand/collapse */}
                                   {hasChildren && (
                                     <button
                                       onClick={(e) => {
@@ -907,7 +916,7 @@ const App: React.FC = () => {
                                         });
                                       }}
                                       style={{
-                                        padding: "6px",
+                                        padding: "2px 4px",
                                         background: "transparent",
                                         border: "none",
                                         cursor: "pointer",
@@ -915,106 +924,76 @@ const App: React.FC = () => {
                                         display: "flex",
                                         alignItems: "center",
                                         justifyContent: "center",
-                                        borderRadius: "4px",
-                                        transition: "all 0.2s",
-                                        minWidth: "24px",
-                                        height: "24px",
+                                        width: "16px",
+                                        height: "16px",
+                                        marginRight: "4px",
+                                        marginLeft: "20px",
                                       }}
                                       onMouseEnter={(e) => {
-                                        e.currentTarget.style.background = "rgba(59, 130, 246, 0.15)";
-                                        e.currentTarget.style.color = "#60a5fa";
+                                        e.currentTarget.style.color = "#cbd5e1";
                                       }}
                                       onMouseLeave={(e) => {
-                                        e.currentTarget.style.background = "transparent";
                                         e.currentTarget.style.color = "#64748b";
                                       }}
-                                      title={isExpanded ? "Colapsar análises" : "Expandir análises"}
+                                      title={isExpanded ? "Colapsar" : "Expandir"}
                                     >
                                       <span style={{
-                                        fontSize: "12px",
+                                        fontSize: "10px",
                                         transform: isExpanded ? "rotate(90deg)" : "rotate(0deg)",
-                                        transition: "transform 0.2s",
+                                        transition: "transform 0.15s",
                                         display: "block",
                                       }}>▶</span>
                                     </button>
                                   )}
-                                  {!hasChildren && <div style={{ width: "24px" }} />}
+                                  {!hasChildren && <div style={{ width: "20px", marginLeft: "20px" }} />}
+
+                                  {/* File/Folder Icon */}
+                                  <span style={{
+                                    fontSize: "14px",
+                                    marginRight: "6px",
+                                    opacity: isActive ? 1 : 0.7,
+                                  }}>
+                                    {hasChildren ? "📁" : "📄"}
+                                  </span>
+
+                                  {/* File/Folder Name */}
                                   <button
                                     onClick={() => setSelectedScenarioId(scenario.id)}
                                     onMouseEnter={(e) => {
                                       if (!isActive) {
-                                        e.currentTarget.style.background = "rgba(59, 130, 246, 0.1)";
-                                        e.currentTarget.style.transform = "translateX(2px)";
+                                        e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)";
                                       }
                                     }}
                                     onMouseLeave={(e) => {
                                       if (!isActive) {
                                         e.currentTarget.style.background = "transparent";
-                                        e.currentTarget.style.transform = "translateX(0)";
                                       }
                                     }}
                                     style={{
                                       flex: 1,
                                       textAlign: "left",
-                                      padding: "14px 16px",
-                                      background: isActive
-                                        ? "linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%)"
-                                        : "transparent",
-                                      color: isActive ? "#60a5fa" : "#e2e8f0",
-                                      border: isActive
-                                        ? "1px solid rgba(59, 130, 246, 0.3)"
-                                        : "1px solid transparent",
-                                      borderRadius: "10px",
+                                      padding: "4px 8px",
+                                      background: isActive ? "rgba(59, 130, 246, 0.15)" : "transparent",
+                                      color: isActive ? "#60a5fa" : "#cbd5e1",
+                                      border: "none",
+                                      borderRadius: "4px",
                                       cursor: "pointer",
-                                      fontSize: "11px",
-                                      fontWeight: isActive ? 600 : 500,
-                                      transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+                                      fontSize: "12px",
+                                      fontWeight: isActive ? 500 : 400,
+                                      transition: "all 0.15s",
                                       display: "flex",
                                       alignItems: "center",
-                                      gap: "12px",
-                                      position: "relative",
-                                      boxShadow: isActive
-                                        ? "0 2px 8px rgba(59, 130, 246, 0.15)"
-                                        : "none",
+                                      gap: "6px",
                                     }}
                                   >
-                                    <div style={{
-                                      width: "8px",
-                                      height: "8px",
-                                      borderRadius: "50%",
-                                      background: isActive
-                                        ? "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)"
-                                        : "rgba(203, 213, 225, 0.4)",
-                                      boxShadow: isActive
-                                        ? "0 0 10px rgba(59, 130, 246, 0.6)"
-                                        : "none",
-                                      transition: "all 0.2s",
-                                    }} />
                                     <span style={{
                                       flex: 1,
                                       overflow: "hidden",
                                       textOverflow: "ellipsis",
                                       whiteSpace: "nowrap",
-                                      fontSize: "11px",
                                     }}>
                                       {scenario.title}
                                     </span>
-                                    {scenarioAnalyses.length > 0 && (
-                                      <span style={{
-                                        fontSize: "10px",
-                                        padding: "3px 8px",
-                                        background: isActive
-                                          ? "rgba(59, 130, 246, 0.25)"
-                                          : "rgba(148, 163, 184, 0.2)",
-                                        color: isActive ? "#60a5fa" : "#94a3b8",
-                                        borderRadius: "12px",
-                                        fontWeight: 700,
-                                        minWidth: "22px",
-                                        textAlign: "center",
-                                      }}>
-                                        {scenarioAnalyses.length}
-                                      </span>
-                                    )}
                                   </button>
                                 </div>
                                 {/* Lista de análises filhas */}
@@ -1022,27 +1001,49 @@ const App: React.FC = () => {
                                   <ul style={{
                                     listStyle: "none",
                                     padding: 0,
-                                    margin: "10px 0 0 28px",
-                                    paddingLeft: "16px",
+                                    margin: "2px 0 0 0",
+                                    paddingLeft: "40px",
                                     position: "relative",
                                   }}>
+                                    {/* Vertical line for children */}
                                     <div style={{
                                       position: "absolute",
-                                      left: 0,
+                                      left: "20px",
                                       top: 0,
                                       bottom: 0,
-                                      width: "2px",
-                                      background: "linear-gradient(180deg, rgba(59, 130, 246, 0.3) 0%, rgba(139, 92, 246, 0.3) 100%)",
-                                      borderRadius: "1px",
+                                      width: "1px",
+                                      background: "#334155",
                                     }} />
-                                    {scenarioAnalyses.map((analysis) => {
+                                    {scenarioAnalyses.map((analysis, childIndex) => {
                                       const isAnalysisActive = analysis.id === selectedScenarioId;
                                       const isAnalysisEditing = editingAnalysisTitle?.id === analysis.id;
+                                      const isLastChild = childIndex === scenarioAnalyses.length - 1;
 
                                       return (
-                                        <li key={analysis.id} style={{ marginBottom: "6px" }}>
+                                        <li key={analysis.id} style={{ marginBottom: "2px", position: "relative" }}>
+                                          {/* Horizontal line */}
+                                          <div style={{
+                                            position: "absolute",
+                                            left: "20px",
+                                            top: "12px",
+                                            width: "12px",
+                                            height: "1px",
+                                            background: "#334155",
+                                          }} />
+                                          {/* Vertical line continuation (only if not last) */}
+                                          {!isLastChild && (
+                                            <div style={{
+                                              position: "absolute",
+                                              left: "20px",
+                                              top: "12px",
+                                              bottom: 0,
+                                              width: "1px",
+                                              background: "#334155",
+                                            }} />
+                                          )}
+
                                           {isAnalysisEditing ? (
-                                            <div style={{ display: "flex", gap: "8px", padding: "4px" }}>
+                                            <div style={{ display: "flex", gap: "6px", padding: "4px", marginLeft: "32px" }}>
                                               <input
                                                 type="text"
                                                 value={editingAnalysisTitle.title}
@@ -1057,27 +1058,26 @@ const App: React.FC = () => {
                                                 autoFocus
                                                 style={{
                                                   flex: 1,
-                                                  padding: "10px 12px",
-                                                  background: "#0f172a",
+                                                  padding: "6px 8px",
+                                                  background: "#1e293b",
                                                   color: "#f8fafc",
                                                   border: "1px solid #475569",
-                                                  borderRadius: "8px",
-                                                  fontSize: "13px",
+                                                  borderRadius: "4px",
+                                                  fontSize: "12px",
                                                   outline: "none",
                                                 }}
                                               />
                                               <button
                                                 onClick={() => handleSaveAnalysisTitle(analysis.id, editingAnalysisTitle.title)}
                                                 style={{
-                                                  padding: "10px 12px",
-                                                  background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                                                  padding: "6px 8px",
+                                                  background: "#10b981",
                                                   color: "#ffffff",
                                                   border: "none",
-                                                  borderRadius: "8px",
+                                                  borderRadius: "4px",
                                                   cursor: "pointer",
-                                                  fontSize: "13px",
+                                                  fontSize: "12px",
                                                   fontWeight: 600,
-                                                  boxShadow: "0 2px 4px rgba(16, 185, 129, 0.3)",
                                                 }}
                                               >
                                                 ✓
@@ -1085,13 +1085,13 @@ const App: React.FC = () => {
                                               <button
                                                 onClick={() => setEditingAnalysisTitle(null)}
                                                 style={{
-                                                  padding: "10px 12px",
+                                                  padding: "6px 8px",
                                                   background: "#475569",
                                                   color: "#ffffff",
                                                   border: "none",
-                                                  borderRadius: "8px",
+                                                  borderRadius: "4px",
                                                   cursor: "pointer",
-                                                  fontSize: "13px",
+                                                  fontSize: "12px",
                                                   fontWeight: 600,
                                                 }}
                                               >
@@ -1104,49 +1104,41 @@ const App: React.FC = () => {
                                               onDoubleClick={() => setEditingAnalysisTitle({ id: analysis.id, title: analysis.title })}
                                               onMouseEnter={(e) => {
                                                 if (!isAnalysisActive) {
-                                                  e.currentTarget.style.background = "rgba(59, 130, 246, 0.1)";
-                                                  e.currentTarget.style.transform = "translateX(2px)";
+                                                  e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)";
                                                 }
                                               }}
                                               onMouseLeave={(e) => {
                                                 if (!isAnalysisActive) {
                                                   e.currentTarget.style.background = "transparent";
-                                                  e.currentTarget.style.transform = "translateX(0)";
                                                 }
                                               }}
                                               style={{
                                                 width: "100%",
                                                 textAlign: "left",
-                                                padding: "10px 14px",
-                                                background: isAnalysisActive
-                                                  ? "linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(139, 92, 246, 0.12) 100%)"
-                                                  : "transparent",
-                                                color: isAnalysisActive ? "#60a5fa" : "#cbd5e1",
-                                                border: isAnalysisActive
-                                                  ? "1px solid rgba(59, 130, 246, 0.25)"
-                                                  : "1px solid transparent",
-                                                borderRadius: "8px",
+                                                padding: "4px 8px",
+                                                marginLeft: "32px",
+                                                background: isAnalysisActive ? "rgba(59, 130, 246, 0.15)" : "transparent",
+                                                color: isAnalysisActive ? "#60a5fa" : "#94a3b8",
+                                                border: "none",
+                                                borderRadius: "4px",
                                                 cursor: "pointer",
-                                                fontSize: "10px",
-                                                fontWeight: isAnalysisActive ? 600 : 500,
-                                                transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+                                                fontSize: "11px",
+                                                fontWeight: isAnalysisActive ? 500 : 400,
+                                                transition: "all 0.15s",
                                                 display: "flex",
                                                 alignItems: "center",
-                                                gap: "10px",
-                                                position: "relative",
+                                                gap: "6px",
                                               }}
                                             >
                                               <span style={{
-                                                fontSize: "16px",
-                                                color: isAnalysisActive ? "#60a5fa" : "rgba(148, 163, 184, 0.7)",
-                                                lineHeight: 1,
-                                              }}>⌞</span>
+                                                fontSize: "12px",
+                                                opacity: isAnalysisActive ? 1 : 0.6,
+                                              }}>📄</span>
                                               <span style={{
                                                 flex: 1,
                                                 overflow: "hidden",
                                                 textOverflow: "ellipsis",
                                                 whiteSpace: "nowrap",
-                                                fontSize: "10px",
                                               }}>
                                                 {analysis.title}
                                               </span>
@@ -1706,18 +1698,17 @@ const App: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Development Mode: Edit Evidences */}
-                  {(window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || import.meta.env.DEV) && (
-                    <div style={{ marginTop: "32px", paddingTop: "24px", borderTop: "1px solid #334155" }}>
-                      <h4 style={{
-                        margin: "0 0 16px 0",
-                        fontSize: "12px",
-                        fontWeight: 600,
-                        color: "#fbbf24",
-                        letterSpacing: "0.05em",
-                      }}>
-                        🛠️ Modo Desenvolvimento - Editar Evidências
-                      </h4>
+                  {/* Edit Evidences */}
+                  <div style={{ marginTop: "32px", paddingTop: "24px", borderTop: "1px solid #334155" }}>
+                    <h4 style={{
+                      margin: "0 0 16px 0",
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      color: "#f8fafc",
+                      letterSpacing: "0.05em",
+                    }}>
+                      ✏️ Editar Evidências
+                    </h4>
 
                       {/* Edit Evidences */}
                       <div style={{ marginBottom: "20px" }}>
@@ -1899,33 +1890,34 @@ const App: React.FC = () => {
                         </button>
                       </div>
 
-                      {/* Export JSON */}
-                      <div style={{ marginTop: "20px", paddingTop: "16px", borderTop: "1px solid #334155" }}>
-                        <button
-                          onClick={() => {
-                            const nodeEv = evidenceData.get(selectedNodeId);
-                            if (!nodeEv) return;
-                            const json = JSON.stringify(nodeEv, null, 2);
-                            navigator.clipboard.writeText(json);
-                            alert("JSON copiado para a área de transferência!");
-                          }}
-                          style={{
-                            width: "100%",
-                            padding: "8px",
-                            background: "#1e3a8a",
-                            border: "1px solid #1e40af",
-                            borderRadius: "4px",
-                            color: "#dbeafe",
-                            fontSize: "10px",
-                            cursor: "pointer",
-                            marginBottom: "8px",
-                          }}
-                        >
-                          📋 Copiar JSON das Evidências
-                        </button>
-                      </div>
+                      {/* Export JSON - Development Only */}
+                      {(window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || import.meta.env.DEV) && (
+                        <div style={{ marginTop: "20px", paddingTop: "16px", borderTop: "1px solid #334155" }}>
+                          <button
+                            onClick={() => {
+                              const nodeEv = evidenceData.get(selectedNodeId);
+                              if (!nodeEv) return;
+                              const json = JSON.stringify(nodeEv, null, 2);
+                              navigator.clipboard.writeText(json);
+                              alert("JSON copiado para a área de transferência!");
+                            }}
+                            style={{
+                              width: "100%",
+                              padding: "8px",
+                              background: "#1e3a8a",
+                              border: "1px solid #1e40af",
+                              borderRadius: "4px",
+                              color: "#dbeafe",
+                              fontSize: "10px",
+                              cursor: "pointer",
+                              marginBottom: "8px",
+                            }}
+                          >
+                            📋 Copiar JSON das Evidências
+                          </button>
+                        </div>
+                      )}
                     </div>
-                  )}
                 </>
               ) : (
                 <div style={{
