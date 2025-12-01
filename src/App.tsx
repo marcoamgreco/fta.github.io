@@ -327,7 +327,20 @@ const App: React.FC = () => {
     if (!nodeEv) return 'none';
 
     const allEvidencesChecked = nodeEv.evidences.every(e => e.checked);
-    return allEvidencesChecked ? 'complete' : 'partial';
+    const hasCounterEvidenceChecked = nodeEv.counterEvidences.some(e => e.checked);
+
+    // Se houver contra-evidência marcada, retorna 'partial' (amarelo)
+    if (hasCounterEvidenceChecked) {
+      return 'partial';
+    }
+
+    // Se todas as evidências estão marcadas e não há contra-evidências, retorna 'complete' (verde)
+    if (allEvidencesChecked) {
+      return 'complete';
+    }
+
+    // Caso contrário, retorna 'none' (sem cor especial)
+    return 'none';
   };
 
   // --- Edit Logic ---
