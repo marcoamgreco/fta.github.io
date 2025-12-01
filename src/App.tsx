@@ -953,7 +953,7 @@ const App: React.FC = () => {
                                         : "1px solid transparent",
                                       borderRadius: "10px",
                                       cursor: "pointer",
-                                      fontSize: "14px",
+                                      fontSize: "12px",
                                       fontWeight: isActive ? 600 : 500,
                                       transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
                                       display: "flex",
@@ -982,7 +982,7 @@ const App: React.FC = () => {
                                       overflow: "hidden",
                                       textOverflow: "ellipsis",
                                       whiteSpace: "nowrap",
-                                      fontSize: "14px",
+                                      fontSize: "12px",
                                     }}>
                                       {scenario.title}
                                     </span>
@@ -1133,7 +1133,7 @@ const App: React.FC = () => {
                                                 overflow: "hidden",
                                                 textOverflow: "ellipsis",
                                                 whiteSpace: "nowrap",
-                                                fontSize: "13px",
+                                                fontSize: "11px",
                                               }}>
                                                 {analysis.title}
                                               </span>
@@ -1165,6 +1165,7 @@ const App: React.FC = () => {
                 <button
                   onClick={() => setIsNewScenarioModalOpen(true)}
                   style={{
+                    display: "none", // Oculto temporariamente
                     width: "100%",
                     textAlign: "center",
                     padding: "14px 16px",
@@ -1176,7 +1177,6 @@ const App: React.FC = () => {
                     fontSize: "12px",
                     fontWeight: 700,
                     transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                    display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     gap: "8px",
