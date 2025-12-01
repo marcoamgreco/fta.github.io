@@ -365,7 +365,7 @@ const CustomNode: React.FC<NodeProps<CustomNodeData>> = ({ data, selected }) => 
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      data.onAddTerminator();
+                      data.onAddTerminator?.();
                     }}
                     title="Adicionar Terminador"
                     style={{

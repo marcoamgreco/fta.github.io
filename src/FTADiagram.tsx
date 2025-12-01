@@ -169,7 +169,7 @@ const FTADiagram: React.FC<FTADiagramProps> = ({
                         description: node.description,
                         onAddEvent: () => onAddNode?.(nodeId, 'event'),
                         onAddBasicEvent: () => onAddNode?.(nodeId, 'basic_event'),
-                        onAddTerminator: isTerminator ? undefined : () => onAddNode?.(nodeId, 'terminator'),
+                        onAddTerminator: isTerminator ? undefined : () => onAddNode?.(nodeId, 'event'),
                         onEdit: () => { }, // Not used anymore
                         onDelete: () => onDeleteNode?.(nodeId),
                         onLabelChange: (newLabel: string) => onEditNode?.(nodeId, newLabel),

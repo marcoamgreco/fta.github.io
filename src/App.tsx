@@ -647,10 +647,10 @@ const App: React.FC = () => {
   }, [isResizing, handleMouseMove, handleMouseUp]);
 
   // Right sidebar resize handlers
-  const handleRightMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsRightResizing(true);
-  }, []);
+  // const handleRightMouseDown = useCallback((e: React.MouseEvent) => {
+  //   e.preventDefault();
+  //   setIsRightResizing(true);
+  // }, []);
 
   const handleRightMouseMove = useCallback((e: MouseEvent) => {
     if (!isRightResizing) return;
@@ -871,7 +871,7 @@ const App: React.FC = () => {
                           {groupedByTech[tech].map((scenario) => {
                             const isActive = scenario.id === selectedScenarioId;
                             const scenarioAnalyses = analysesByParent[scenario.id] || [];
-                            const isEditing = editingAnalysisTitle?.id === scenario.id;
+                            // const isEditing = editingAnalysisTitle?.id === scenario.id;
                             const isExpanded = expandedTrees.has(scenario.id);
                             const hasChildren = scenarioAnalyses.length > 0;
 
@@ -1162,48 +1162,48 @@ const App: React.FC = () => {
                 background: "#0f172a",
                 paddingBottom: "16px",
               }}>
-                  <button
-                    onClick={() => setIsNewScenarioModalOpen(true)}
-                    style={{
-                      width: "100%",
-                      textAlign: "center",
-                      padding: "14px 16px",
-                      background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                      color: "#ffffff",
-                      border: "none",
-                      borderRadius: "10px",
-                      cursor: "pointer",
-                      fontSize: "12px",
-                      fontWeight: 700,
-                      transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: "8px",
-                      boxShadow: "0 4px 12px rgba(16, 185, 129, 0.25)",
-                      letterSpacing: "0.02em",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = "translateY(-2px)";
-                      e.currentTarget.style.boxShadow = "0 6px 16px rgba(16, 185, 129, 0.4)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = "translateY(0)";
-                      e.currentTarget.style.boxShadow = "0 4px 12px rgba(16, 185, 129, 0.25)";
-                    }}
-                  >
-                    <span style={{
-                      fontSize: "16px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      width: "20px",
-                      height: "20px",
-                      background: "rgba(255, 255, 255, 0.2)",
-                      borderRadius: "50%",
-                    }}>+</span>
-                    Nova Árvore Universal
-                  </button>
+                <button
+                  onClick={() => setIsNewScenarioModalOpen(true)}
+                  style={{
+                    width: "100%",
+                    textAlign: "center",
+                    padding: "14px 16px",
+                    background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                    color: "#ffffff",
+                    border: "none",
+                    borderRadius: "10px",
+                    cursor: "pointer",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "8px",
+                    boxShadow: "0 4px 12px rgba(16, 185, 129, 0.25)",
+                    letterSpacing: "0.02em",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                    e.currentTarget.style.boxShadow = "0 6px 16px rgba(16, 185, 129, 0.4)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(16, 185, 129, 0.25)";
+                  }}
+                >
+                  <span style={{
+                    fontSize: "16px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "20px",
+                    height: "20px",
+                    background: "rgba(255, 255, 255, 0.2)",
+                    borderRadius: "50%",
+                  }}>+</span>
+                  Nova Árvore Universal
+                </button>
               </div>
             </nav>
 

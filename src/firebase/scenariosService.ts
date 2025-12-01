@@ -73,19 +73,6 @@ export const saveScenarioToFirestore = async (scenario: Scenario): Promise<void>
   try {
     const scenarioRef = doc(db, SCENARIOS_COLLECTION, scenario.id);
 
-    // Preparar dados para salvar
-    const dataToSave = {
-      id: scenario.id,
-      title: scenario.title,
-      rootNode: scenario.rootNode, // Objeto completo com todas as descrições
-      tecnologia: scenario.tecnologia || '',
-      refinaria: scenario.refinaria || '',
-      cenario: scenario.cenario || '',
-      isUniversal: scenario.isUniversal !== undefined ? scenario.isUniversal : true,
-      parentId: scenario.parentId || null,
-      evidenceData: scenario.evidenceData || {},
-    };
-
     // Log para debug - verificar se rootNode tem descrições
     const checkDescriptions = (node: any, path: string = ''): string[] => {
       const descriptions: string[] = [];
@@ -164,7 +151,7 @@ export const isFirebaseConfigured = (): boolean => {
     // Verifica se as credenciais padrão foram substituídas
     const config = db.app.options;
     return config.projectId !== 'SEU_PROJECT_ID' &&
-           config.apiKey !== 'SUA_API_KEY_AQUI';
+      config.apiKey !== 'SUA_API_KEY_AQUI';
   } catch {
     return false;
   }
