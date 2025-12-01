@@ -14,6 +14,7 @@ type UseScenariosReturn = {
   error: string | null;
   source: 'firebase' | 'local';
   refreshScenarios: () => Promise<void>;
+  updateLocalScenario: (updatedScenario: Scenario) => void;
 };
 
 export const useScenarios = (): UseScenariosReturn => {
@@ -32,10 +33,14 @@ export const useScenarios = (): UseScenariosReturn => {
         try {
           const firebaseScenarios = await getScenariosFromFirestore();
           if (firebaseScenarios && firebaseScenarios.length > 0) {
-            setScenariosList(firebaseScenarios);
+            // Ordenar cenários alfabeticamente por título
+            const sortedScenarios = [...firebaseScenarios].sort((a, b) =>
+              a.title.localeCompare(b.title, 'pt-BR', { sensitivity: 'base' })
+            );
+            setScenariosList(sortedScenarios);
             setSource('firebase');
             setLoading(false);
-            console.log(`✅ Carregados ${firebaseScenarios.length} cenários do Firebase`);
+            console.log(`✅ Carregados ${sortedScenarios.length} cenários do Firebase (ordenados alfabeticamente)`);
             return;
           }
         } catch (firebaseError) {
@@ -43,14 +48,20 @@ export const useScenarios = (): UseScenariosReturn => {
         }
       }
 
-      // Fallback para dados locais
-      setScenariosList(scenarios);
+      // Fallback para dados locais - também ordenar alfabeticamente
+      const sortedLocalScenarios = [...scenarios].sort((a, b) =>
+        a.title.localeCompare(b.title, 'pt-BR', { sensitivity: 'base' })
+      );
+      setScenariosList(sortedLocalScenarios);
       setSource('local');
-      console.log(`✅ Carregados ${scenarios.length} cenários do arquivo local`);
+      console.log(`✅ Carregados ${sortedLocalScenarios.length} cenários do arquivo local (ordenados alfabeticamente)`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro desconhecido');
-      // Em caso de erro, usar dados locais como último recurso
-      setScenariosList(scenarios);
+      // Em caso de erro, usar dados locais como último recurso - também ordenar
+      const sortedLocalScenarios = [...scenarios].sort((a, b) =>
+        a.title.localeCompare(b.title, 'pt-BR', { sensitivity: 'base' })
+      );
+      setScenariosList(sortedLocalScenarios);
       setSource('local');
     } finally {
       setLoading(false);
@@ -61,5 +72,11 @@ export const useScenarios = (): UseScenariosReturn => {
     loadScenarios();
   }, []);
 
-  return { scenariosList, loading, error, source, refreshScenarios: loadScenarios };
+  const updateLocalScenario = (updatedScenario: Scenario) => {
+    setScenariosList(prev =>
+      prev.map(s => s.id === updatedScenario.id ? updatedScenario : s)
+    );
+  };
+
+  return { scenariosList, loading, error, source, refreshScenarios: loadScenarios, updateLocalScenario };
 };

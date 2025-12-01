@@ -97,3 +97,71 @@ button:focus-visible {
 button:hover .reorganize-icon {
   animation-play-state: running;
 }
+
+@media print {
+  /* Hide UI elements */
+  aside,
+  header,
+  button:not(.print-header),
+  .react-flow__controls,
+  .react-flow__minimap,
+  .react-flow__panel {
+    display: none !important;
+  }
+
+  /* Print header with scenario info */
+  .print-header {
+    display: block !important;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 20px;
+    background: white;
+    border-bottom: 2px solid #000;
+    z-index: 10000;
+    page-break-after: avoid;
+  }
+
+  /* Ensure body and app container take full size */
+  body, #root, .app-container {
+    width: 100vw;
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+    background: white !important;
+  }
+
+  /* Ensure diagram is visible and centered */
+  .react-flow {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100% !important;
+    height: 100% !important;
+    z-index: 9999;
+  }
+
+  /* Force background printing for nodes */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Page break settings */
+  @page {
+    margin: 20mm;
+    size: A4 landscape;
+  }
+}
+
+/* Loading spinner animation */
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}

@@ -117,6 +117,7 @@ const FTADiagram: React.FC<FTADiagramProps> = ({
     }, []);
 
     useEffect(() => {
+        console.log('🔄 FTADiagram: rootNode updated', { id: rootNode.id, childrenCount: rootNode.children?.length });
         // --- Recursive Tree Parser ---
         const generateElements = (root: TreeNode) => {
             const nodes: Node[] = [];
@@ -125,6 +126,7 @@ const FTADiagram: React.FC<FTADiagramProps> = ({
             const traverse = (node: TreeNode, parentId?: string) => {
                 const nodeId = node.id;
                 const isBasic = node.type === 'basic_event';
+                const isTerminator = node.type === 'terminator';
                 const status = getNodeStatus?.(nodeId) || 'none';
                 const isRoot = !parentId;
 
@@ -139,26 +141,41 @@ const FTADiagram: React.FC<FTADiagramProps> = ({
                     parentIsComplete = parentStatus === 'complete';
                 }
 
+                // Determine node dimensions
+                let nodeWidth = 150;
+                let nodeHeight = 50;
+                if (isBasic) {
+                    nodeWidth = 100;
+                    nodeHeight = 100;
+                } else if (isTerminator) {
+                    // Losango: largura metade, altura 1/4
+                    nodeWidth = 60;
+                    nodeHeight = 30;
+                }
+
                 nodes.push({
                     id: nodeId,
                     type: 'customNode',
                     selected: nodeId === selectedNodeId,
                     data: {
                         label: node.label,
-                        width: isBasic ? 100 : 150,
-                        height: isBasic ? 100 : 50,
+                        width: nodeWidth,
+                        height: nodeHeight,
                         isBasic,
+                        isTerminator,
                         status,
                         isRoot,
                         parentIsComplete,
+                        description: node.description,
                         onAddEvent: () => onAddNode?.(nodeId, 'event'),
                         onAddBasicEvent: () => onAddNode?.(nodeId, 'basic_event'),
+                        onAddTerminator: isTerminator ? undefined : () => onAddNode?.(nodeId, 'terminator'),
                         onEdit: () => { }, // Not used anymore
                         onDelete: () => onDeleteNode?.(nodeId),
                         onLabelChange: (newLabel: string) => onEditNode?.(nodeId, newLabel),
                     },
                     position: { x: 0, y: 0 },
-                    style: { width: isBasic ? 100 : 150, height: isBasic ? 100 : 50 },
+                    style: { width: nodeWidth, height: nodeHeight },
                 });
 
                 if (parentId) {
@@ -182,41 +199,54 @@ const FTADiagram: React.FC<FTADiagramProps> = ({
                     });
                 }
 
-                if (node.children && node.children.length > 0) {
-                    const gateId = `${nodeId}-gate`;
-                    const gateType = node.gateType || 'OR';
+                // Terminadores não podem ter filhos
+                if (node.children && node.children.length > 0 && !isTerminator) {
+                    // Separar filhos em terminadores e não-terminadores
+                    const terminators = node.children.filter(child => child.type === 'terminator');
+                    const nonTerminators = node.children.filter(child => child.type !== 'terminator');
 
-                    // Gate border color: black ONLY if the parent node (nodeId) has ALL evidences checked
-                    // Gates should start gray (#ccc) and only turn black when parent evidence is complete
-                    // Explicitly check that status is exactly 'complete' (all evidences checked)
-                    const isNodeComplete = status === 'complete';
-                    const gateBorderColor = isNodeComplete ? '#000' : '#ccc';
-
-                    nodes.push({
-                        id: gateId,
-                        type: 'default',
-                        data: { label: gateType, width: 60, height: 40 },
-                        position: { x: 0, y: 0 },
-                        style: {
-                            ...(gateType === 'AND' ? andGateStyle : gateNodeStyle),
-                            border: `2px solid ${gateBorderColor}`,
-                        },
+                    // Conectar terminadores diretamente ao evento pai, sem gate
+                    terminators.forEach((terminator) => {
+                        traverse(terminator, nodeId);
                     });
 
-                    // Edge from node to gate - black if node is complete
-                    edges.push({
-                        id: `${nodeId}-${gateId}`,
-                        source: nodeId,
-                        target: gateId,
-                        type: 'animated',
-                        data: {
-                            strokeColor: isNodeComplete ? '#000' : '#bbb',
-                        },
-                    });
+                    // Para não-terminadores, criar gate normalmente
+                    if (nonTerminators.length > 0) {
+                        const gateId = `${nodeId}-gate`;
+                        const gateType = node.gateType || 'OR';
 
-                    node.children.forEach((child) => {
-                        traverse(child, gateId);
-                    });
+                        // Gate border color: black ONLY if the parent node (nodeId) has ALL evidences checked
+                        // Gates should start gray (#ccc) and only turn black when parent evidence is complete
+                        // Explicitly check that status is exactly 'complete' (all evidences checked)
+                        const isNodeComplete = status === 'complete';
+                        const gateBorderColor = isNodeComplete ? '#000' : '#ccc';
+
+                        nodes.push({
+                            id: gateId,
+                            type: 'default',
+                            data: { label: gateType, width: 60, height: 40 },
+                            position: { x: 0, y: 0 },
+                            style: {
+                                ...(gateType === 'AND' ? andGateStyle : gateNodeStyle),
+                                border: `2px solid ${gateBorderColor}`,
+                            },
+                        });
+
+                        // Edge from node to gate - black if node is complete
+                        edges.push({
+                            id: `${nodeId}-${gateId}`,
+                            source: nodeId,
+                            target: gateId,
+                            type: 'animated',
+                            data: {
+                                strokeColor: isNodeComplete ? '#000' : '#bbb',
+                            },
+                        });
+
+                        nonTerminators.forEach((child) => {
+                            traverse(child, gateId);
+                        });
+                    }
                 }
             };
 
@@ -278,66 +308,66 @@ const FTADiagram: React.FC<FTADiagramProps> = ({
                 <Panel position="bottom-right">
                     <div style={{ marginBottom: '10px' }}>
                         <button
-                        onClick={() => {
-                            const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(
-                                nodes,
-                                edges,
-                                'TB'
-                            );
-                            setNodes([...layoutedNodes]);
-                            setEdges([...layoutedEdges]);
-                            reactFlowInstanceRef.current?.fitView({ duration: 300, padding: 0.2 });
-                        }}
-                        style={{
-                            padding: '8px 12px',
-                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                            border: 'none',
-                            borderRadius: '8px',
-                            cursor: 'pointer',
-                            fontSize: '9px',
-                            fontWeight: 600,
-                            color: '#ffffff',
-                            boxShadow: '0 4px 12px rgba(102, 126, 234, 0.4)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            transition: 'all 0.3s ease',
-                            fontFamily: 'system-ui, -apple-system, sans-serif',
-                        }}
-                        onMouseEnter={(e) => {
-                            e.currentTarget.style.transform = 'translateY(-2px)';
-                            e.currentTarget.style.boxShadow = '0 6px 16px rgba(102, 126, 234, 0.5)';
-                        }}
-                        onMouseLeave={(e) => {
-                            e.currentTarget.style.transform = 'translateY(0)';
-                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.4)';
-                        }}
-                        onMouseDown={(e) => {
-                            e.currentTarget.style.transform = 'translateY(0)';
-                        }}
-                        onMouseUp={(e) => {
-                            e.currentTarget.style.transform = 'translateY(-2px)';
-                        }}
-                    >
-                        <svg
-                            width="12"
-                            height="12"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            style={{
-                                display: 'inline-block',
-                                transition: 'transform 0.3s ease',
+                            onClick={() => {
+                                const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(
+                                    nodes,
+                                    edges,
+                                    'TB'
+                                );
+                                setNodes([...layoutedNodes]);
+                                setEdges([...layoutedEdges]);
+                                reactFlowInstanceRef.current?.fitView({ duration: 300, padding: 0.2 });
                             }}
-                            className="reorganize-icon"
+                            style={{
+                                padding: '8px 12px',
+                                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                border: 'none',
+                                borderRadius: '8px',
+                                cursor: 'pointer',
+                                fontSize: '9px',
+                                fontWeight: 600,
+                                color: '#ffffff',
+                                boxShadow: '0 4px 12px rgba(102, 126, 234, 0.4)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                transition: 'all 0.3s ease',
+                                fontFamily: 'system-ui, -apple-system, sans-serif',
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.transform = 'translateY(-2px)';
+                                e.currentTarget.style.boxShadow = '0 6px 16px rgba(102, 126, 234, 0.5)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.4)';
+                            }}
+                            onMouseDown={(e) => {
+                                e.currentTarget.style.transform = 'translateY(0)';
+                            }}
+                            onMouseUp={(e) => {
+                                e.currentTarget.style.transform = 'translateY(-2px)';
+                            }}
                         >
-                            <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
-                        </svg>
-                        <span>Reorganizar Árvore</span>
-                    </button>
+                            <svg
+                                width="12"
+                                height="12"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                style={{
+                                    display: 'inline-block',
+                                    transition: 'transform 0.3s ease',
+                                }}
+                                className="reorganize-icon"
+                            >
+                                <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
+                            </svg>
+                            <span>Reorganizar Árvore</span>
+                        </button>
                     </div>
                 </Panel>
             </ReactFlow>

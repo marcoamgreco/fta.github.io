@@ -62,4 +62,3 @@ Você também pode executar o workflow manualmente:
 - O build usa as variáveis de ambiente dos secrets do GitHub
 - O arquivo `.env` é criado apenas durante o build e não é commitado
 - O deploy é feito automaticamente para o GitHub Pages após o build bem-sucedido
-

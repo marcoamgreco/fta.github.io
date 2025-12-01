@@ -1,4 +1,4 @@
-export type FTANodeType = "event" | "basic_event";
+export type FTANodeType = "event" | "basic_event" | "terminator";
 export type FTAGateType = "AND" | "OR";
 
 export type TreeNode = {
@@ -14,6 +14,12 @@ export type Scenario = {
     id: string;
     title: string;
     rootNode: TreeNode;
+    tecnologia?: string;
+    refinaria?: string;
+    cenario?: string;
+    isUniversal?: boolean; // true para árvores universais, false ou undefined para análises
+    parentId?: string | null; // ID da árvore universal que originou esta análise (null para universais)
+    evidenceData?: Record<string, { nodeId: string; evidences: Array<{ id: string; text: string; checked: boolean }>; counterEvidences: Array<{ id: string; text: string; checked: boolean }> }>; // Evidências serializadas
 };
 
 export const scenarios: Scenario[] = [

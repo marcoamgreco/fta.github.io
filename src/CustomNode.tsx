@@ -5,11 +5,14 @@ import { Handle, Position, NodeResizer } from 'reactflow';
 type CustomNodeData = {
   label: string;
   isBasic: boolean;
+  isTerminator?: boolean;
   status?: 'complete' | 'partial' | 'none';
   isRoot?: boolean;
   parentIsComplete?: boolean;
+  description?: string;
   onAddEvent: () => void;
   onAddBasicEvent: () => void;
+  onAddTerminator?: () => void;
   onEdit: () => void;
   onDelete: () => void;
   onLabelChange?: (newLabel: string) => void;
@@ -55,6 +58,80 @@ const CustomNode: React.FC<NodeProps<CustomNodeData>> = ({ data, selected }) => 
     setEditValue(data.label);
   }, [data.label]);
 
+  // Ativar edição automaticamente quando o nó está selecionado e o usuário começa a digitar
+  React.useEffect(() => {
+    if (!selected || isEditing) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignorar se houver um input, textarea ou elemento editável focado
+      const activeElement = document.activeElement;
+      if (
+        activeElement &&
+        (activeElement.tagName === 'INPUT' ||
+          activeElement.tagName === 'TEXTAREA' ||
+          (activeElement as HTMLElement).isContentEditable)
+      ) {
+        return;
+      }
+
+      // Ignorar teclas especiais (Ctrl, Alt, Meta, Shift, etc.)
+      if (
+        e.ctrlKey ||
+        e.altKey ||
+        e.metaKey ||
+        e.key === 'Tab' ||
+        e.key === 'Escape' ||
+        e.key === 'Enter' ||
+        e.key.startsWith('Arrow') ||
+        e.key === 'F1' ||
+        e.key === 'F2' ||
+        e.key === 'F3' ||
+        e.key === 'F4' ||
+        e.key === 'F5' ||
+        e.key === 'F6' ||
+        e.key === 'F7' ||
+        e.key === 'F8' ||
+        e.key === 'F9' ||
+        e.key === 'F10' ||
+        e.key === 'F11' ||
+        e.key === 'F12'
+      ) {
+        return;
+      }
+
+      // Se for um caractere imprimível, ativar edição
+      if (e.key.length === 1) {
+        e.preventDefault();
+        setIsEditing(true);
+        // Substituir o texto pelo caractere digitado (como se tivesse selecionado tudo)
+        setEditValue(e.key);
+        // Focar no input após um pequeno delay para garantir que foi renderizado
+        setTimeout(() => {
+          if (inputRef.current) {
+            inputRef.current.focus();
+            // Posicionar o cursor no final
+            inputRef.current.setSelectionRange(1, 1);
+          }
+        }, 0);
+      } else if (e.key === 'Backspace' || e.key === 'Delete') {
+        // Se for Backspace ou Delete, ativar edição e limpar o texto
+        e.preventDefault();
+        setIsEditing(true);
+        setEditValue('');
+        setTimeout(() => {
+          if (inputRef.current) {
+            inputRef.current.focus();
+          }
+        }, 0);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [selected, isEditing]);
+
   const handleEditClick = () => {
     setIsEditing(true);
   };
@@ -88,9 +165,23 @@ const CustomNode: React.FC<NodeProps<CustomNodeData>> = ({ data, selected }) => 
     return '#ccc';
   };
 
+  // Calculate font size based on text length
+  const getFontSize = (text: string, isBasic: boolean): string => {
+    const length = text.length;
+    const baseSize = isBasic ? 9 : 10;
+
+    if (length > 60) return `${Math.max(6, baseSize - 3)}px`;
+    if (length > 40) return `${Math.max(7, baseSize - 2)}px`;
+    if (length > 20) return `${Math.max(8, baseSize - 1)}px`;
+
+    return `${baseSize}px`;
+  };
+
+  const currentFontSize = getFontSize(data.label, data.isBasic);
+
   const baseStyle: React.CSSProperties = {
     padding: '10px 10px',
-    fontSize: '10px',
+    fontSize: currentFontSize,
     textAlign: 'center',
     background: data.status === 'complete'
       ? '#d1fae5'
@@ -115,13 +206,22 @@ const CustomNode: React.FC<NodeProps<CustomNodeData>> = ({ data, selected }) => 
       ...baseStyle,
       borderRadius: '50%',
       padding: '10px',
-      fontSize: '9px',
     }
-    : {
-      ...baseStyle,
-      borderRadius: '0px',
-      padding: '15px 20px',
-    };
+    : data.isTerminator
+      ? {
+        ...baseStyle,
+        borderRadius: '0px',
+        padding: '0px',
+        clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+      }
+      : {
+        ...baseStyle,
+        borderRadius: '0px',
+        padding: '15px 20px',
+      };
 
   return (
     <>
@@ -138,38 +238,50 @@ const CustomNode: React.FC<NodeProps<CustomNodeData>> = ({ data, selected }) => 
       >
         <Handle type="target" position={Position.Top} style={{ background: '#555' }} />
 
-        {isEditing ? (
-          <input
-            ref={inputRef}
-            type="text"
-            value={editValue}
-            onChange={(e) => setEditValue(e.target.value)}
-            onKeyDown={handleKeyDown}
-            onBlur={handleSave}
-            style={{
-              width: '100%',
-              border: '1px solid #3b82f6',
-              borderRadius: '4px',
-              padding: '4px 8px',
-              fontSize: data.isBasic ? '9px' : '10px',
-              textAlign: 'center',
-              outline: 'none',
-              background: '#fff',
+        <div style={{
+          transform: data.isTerminator ? 'rotate(-45deg)' : 'none',
+          width: data.isTerminator ? '100%' : '100%',
+          height: data.isTerminator ? '100%' : '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: data.isTerminator ? '15px 20px' : '0',
+        }}>
+          {isEditing ? (
+            <input
+              ref={inputRef}
+              type="text"
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              onBlur={handleSave}
+              style={{
+                width: '100%',
+                border: 'none',
+                borderRadius: '0',
+                padding: '0',
+                fontSize: currentFontSize,
+                textAlign: 'center',
+                outline: 'none',
+                background: 'transparent',
+                color: '#000',
+                wordBreak: 'break-word',
+                lineHeight: '1.4',
+              }}
+              onClick={(e) => e.stopPropagation()}
+            />
+          ) : (
+            <div style={{
+              wordBreak: 'break-word',
               color: '#000',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          />
-        ) : (
-          <div style={{
-            wordBreak: 'break-word',
-            color: '#000',
-            fontSize: data.isBasic ? '9px' : '10px',
-            lineHeight: '1.4',
-            width: '100%',
-          }}>
-            {data.label}
-          </div>
-        )}
+              fontSize: currentFontSize,
+              lineHeight: '1.4',
+              width: '100%',
+            }}>
+              {data.label}
+            </div>
+          )}
+        </div>
 
         {/* Hover Toolbar */}
         {isHovered && !isEditing && (
@@ -189,7 +301,7 @@ const CustomNode: React.FC<NodeProps<CustomNodeData>> = ({ data, selected }) => 
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
           >
-            {!data.isBasic && (
+            {!data.isBasic && !data.isTerminator && (
               <>
                 <button
                   onClick={(e) => {
@@ -249,6 +361,37 @@ const CustomNode: React.FC<NodeProps<CustomNodeData>> = ({ data, selected }) => 
                 >
                   ⚫
                 </button>
+                {data.onAddTerminator && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      data.onAddTerminator();
+                    }}
+                    title="Adicionar Terminador"
+                    style={{
+                      padding: '4px 6px',
+                      fontSize: '12px',
+                      color: '#7c2d12',
+                      background: '#fed7aa',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = '#fdba74';
+                      e.currentTarget.style.transform = 'scale(1.05)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = '#fed7aa';
+                      e.currentTarget.style.transform = 'scale(1)';
+                    }}
+                  >
+                    ◆
+                  </button>
+                )}
               </>
             )}
             <button
@@ -312,7 +455,27 @@ const CustomNode: React.FC<NodeProps<CustomNodeData>> = ({ data, selected }) => 
           </div>
         )}
 
-        <Handle type="source" position={Position.Bottom} style={{ background: '#555' }} />
+        {!data.isTerminator && (
+          <Handle type="source" position={Position.Bottom} style={{ background: '#555' }} />
+        )}
+
+        {/* Description Indicator */}
+        {data.description && data.description.trim() && (
+          <div
+            style={{
+              position: 'absolute',
+              bottom: '4px',
+              right: '4px',
+              fontSize: '12px',
+              opacity: 0.7,
+              pointerEvents: 'none',
+              zIndex: 1,
+            }}
+            title="Este evento possui descrição"
+          >
+            📄
+          </div>
+        )}
       </div>
     </>
   );
