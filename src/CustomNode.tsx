@@ -466,10 +466,11 @@ const CustomNode: React.FC<NodeProps<CustomNodeData>> = ({ data, selected }) => 
               position: 'absolute',
               bottom: '4px',
               right: '4px',
-              fontSize: '12px',
-              opacity: 0.7,
+              fontSize: '14px',
+              opacity: 1,
               pointerEvents: 'none',
               zIndex: 1,
+              filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2))',
             }}
             title="Este evento possui descrição"
           >
