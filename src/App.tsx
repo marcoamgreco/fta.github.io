@@ -953,7 +953,7 @@ const App: React.FC = () => {
                                         : "1px solid transparent",
                                       borderRadius: "10px",
                                       cursor: "pointer",
-                                      fontSize: "12px",
+                                      fontSize: "11px",
                                       fontWeight: isActive ? 600 : 500,
                                       transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
                                       display: "flex",
@@ -982,7 +982,7 @@ const App: React.FC = () => {
                                       overflow: "hidden",
                                       textOverflow: "ellipsis",
                                       whiteSpace: "nowrap",
-                                      fontSize: "12px",
+                                      fontSize: "11px",
                                     }}>
                                       {scenario.title}
                                     </span>
@@ -1114,7 +1114,7 @@ const App: React.FC = () => {
                                                   : "1px solid transparent",
                                                 borderRadius: "8px",
                                                 cursor: "pointer",
-                                                fontSize: "13px",
+                                                fontSize: "10px",
                                                 fontWeight: isAnalysisActive ? 600 : 500,
                                                 transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
                                                 display: "flex",
@@ -1133,7 +1133,7 @@ const App: React.FC = () => {
                                                 overflow: "hidden",
                                                 textOverflow: "ellipsis",
                                                 whiteSpace: "nowrap",
-                                                fontSize: "11px",
+                                                fontSize: "10px",
                                               }}>
                                                 {analysis.title}
                                               </span>

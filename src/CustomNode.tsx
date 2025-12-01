@@ -219,7 +219,7 @@ const CustomNode: React.FC<NodeProps<CustomNodeData>> = ({ data, selected }) => 
       }
       : {
         ...baseStyle,
-        borderRadius: '0px',
+        borderRadius: '8px',
         padding: '15px 20px',
       };
 

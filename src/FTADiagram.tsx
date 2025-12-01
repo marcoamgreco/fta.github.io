@@ -271,7 +271,7 @@ const FTADiagram: React.FC<FTADiagramProps> = ({
         // Fit view when scenario changes (rootNode changes)
         if (rootNodeChanged && layoutedNodes.length > 0) {
             setTimeout(() => {
-                reactFlowInstanceRef.current?.fitView({ duration: 0, padding: 0.2 });
+                reactFlowInstanceRef.current?.fitView({ duration: 0, padding: 0.2, minZoom: 0.05 });
             }, 200);
         }
     }, [rootNode, setNodes, setEdges, onAddNode, onEditNode, onDeleteNode, selectedNodeId, getNodeStatus]);
@@ -289,7 +289,7 @@ const FTADiagram: React.FC<FTADiagramProps> = ({
     };
 
     return (
-        <div style={{ width: '100%', height: '100%', background: '#f8f8f8' }}>
+        <div style={{ width: '100%', height: '100%', background: '#f0f2f5' }}>
             <ReactFlow
                 nodes={nodes}
                 edges={edges}
@@ -302,6 +302,7 @@ const FTADiagram: React.FC<FTADiagramProps> = ({
                 onPaneClick={onPaneClick}
                 onInit={onInit}
                 attributionPosition="bottom-right"
+                minZoom={0.05}
             >
                 <Controls />
                 <Background color="#aaa" gap={16} />
@@ -316,7 +317,7 @@ const FTADiagram: React.FC<FTADiagramProps> = ({
                                 );
                                 setNodes([...layoutedNodes]);
                                 setEdges([...layoutedEdges]);
-                                reactFlowInstanceRef.current?.fitView({ duration: 300, padding: 0.2 });
+                                reactFlowInstanceRef.current?.fitView({ duration: 300, padding: 0.2, minZoom: 0.05 });
                             }}
                             style={{
                                 padding: '8px 12px',
