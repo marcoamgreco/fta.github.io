@@ -868,7 +868,7 @@ const App: React.FC = () => {
                             userSelect: "none",
                           }}
                         >
-                          <span style={{ fontSize: "14px", display: "flex", alignItems: "center" }}>📁</span>
+                          <span style={{ fontSize: "12px", display: "flex", alignItems: "center" }}>📁</span>
                           <span>{tech}</span>
                         </div>
                         <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
