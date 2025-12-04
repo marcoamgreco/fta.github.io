@@ -1021,6 +1021,15 @@ const App: React.FC = () => {
 
                                       return (
                                         <li key={analysis.id} style={{ marginBottom: "2px", position: "relative" }}>
+                                          {/* Vertical line for children */}
+                                          <div style={{
+                                            position: "absolute",
+                                            left: "20px",
+                                            top: 0,
+                                            bottom: isLastChild ? "50%" : 0,
+                                            width: "1px",
+                                            background: "#334155",
+                                          }} />
                                           {/* Horizontal line */}
                                           <div style={{
                                             position: "absolute",
@@ -1030,17 +1039,6 @@ const App: React.FC = () => {
                                             height: "1px",
                                             background: "#334155",
                                           }} />
-                                          {/* Vertical line continuation (only if not last) */}
-                                          {!isLastChild && (
-                                            <div style={{
-                                              position: "absolute",
-                                              left: "20px",
-                                              top: "12px",
-                                              bottom: 0,
-                                              width: "1px",
-                                              background: "#334155",
-                                            }} />
-                                          )}
 
                                           {isAnalysisEditing ? (
                                             <div style={{ display: "flex", gap: "6px", padding: "4px", marginLeft: "32px" }}>
@@ -1131,7 +1129,7 @@ const App: React.FC = () => {
                                               }}
                                             >
                                               <span style={{
-                                                fontSize: "12px",
+                                                fontSize: "11px",
                                                 opacity: isAnalysisActive ? 1 : 0.6,
                                               }}>📄</span>
                                               <span style={{
@@ -1220,10 +1218,39 @@ const App: React.FC = () => {
                 borderTop: selectedScenarioId ? "1px solid #334155" : "none",
                 fontSize: "12px",
                 color: "#64748b",
-                textAlign: "center",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
               }}
             >
-              v1.1.0 · Desktop Edition
+              <span>v1.1.0 · Desktop Edition</span>
+              <button
+                onClick={() => setIsNewScenarioModalOpen(true)}
+                title="Criar Novo Cenário"
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: "#64748b",
+                  cursor: "pointer",
+                  padding: "4px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRadius: "4px",
+                  transition: "all 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = "#f8fafc";
+                  e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = "#64748b";
+                  e.currentTarget.style.background = "transparent";
+                }}
+              >
+                <span style={{ fontSize: "14px", fontWeight: "bold" }}>+</span>
+              </button>
             </div>
           </>
         ) : (
@@ -1710,214 +1737,214 @@ const App: React.FC = () => {
                       ✏️ Editar Evidências
                     </h4>
 
-                      {/* Edit Evidences */}
-                      <div style={{ marginBottom: "20px" }}>
-                        <h5 style={{
-                          margin: "0 0 8px 0",
-                          fontSize: "11px",
-                          fontWeight: 600,
-                          color: "#f8fafc",
-                        }}>
-                          Evidências:
-                        </h5>
-                        {evidenceData.get(selectedNodeId)!.evidences.map((evidence, index) => (
-                          <div key={evidence.id} style={{ marginBottom: "8px", display: "flex", gap: "8px", alignItems: "center" }}>
-                            <input
-                              type="text"
-                              value={evidence.text}
-                              onChange={(e) => {
-                                const nodeEv = evidenceData.get(selectedNodeId);
-                                if (!nodeEv) return;
-                                const updated = {
-                                  ...nodeEv,
-                                  evidences: nodeEv.evidences.map((ev, i) =>
-                                    i === index ? { ...ev, text: e.target.value } : ev
-                                  ),
-                                };
-                                setEvidenceData(new Map(evidenceData.set(selectedNodeId, updated)));
-                                debouncedSaveEvidence();
-                              }}
-                              style={{
-                                flex: 1,
-                                padding: "6px 8px",
-                                background: "#1e293b",
-                                border: "1px solid #334155",
-                                borderRadius: "4px",
-                                color: "#f8fafc",
-                                fontSize: "11px",
-                              }}
-                              placeholder="Texto da evidência"
-                            />
-                            <button
-                              onClick={() => {
-                                const nodeEv = evidenceData.get(selectedNodeId);
-                                if (!nodeEv) return;
-                                const updated = {
-                                  ...nodeEv,
-                                  evidences: nodeEv.evidences.filter((_, i) => i !== index),
-                                };
-                                setEvidenceData(new Map(evidenceData.set(selectedNodeId, updated)));
-                                debouncedSaveEvidence();
-                              }}
-                              style={{
-                                padding: "6px 10px",
-                                background: "#7f1d1d",
-                                border: "1px solid #991b1b",
-                                borderRadius: "4px",
-                                color: "#fee2e2",
-                                fontSize: "10px",
-                                cursor: "pointer",
-                              }}
-                            >
-                              Remover
-                            </button>
-                          </div>
-                        ))}
-                        <button
-                          onClick={() => {
-                            const nodeEv = evidenceData.get(selectedNodeId);
-                            if (!nodeEv) return;
-                            const newId = `${selectedNodeId}-ev${nodeEv.evidences.length + 1}`;
-                            const updated = {
-                              ...nodeEv,
-                              evidences: [...nodeEv.evidences, { id: newId, text: "", checked: false }],
-                            };
-                            setEvidenceData(new Map(evidenceData.set(selectedNodeId, updated)));
-                            debouncedSaveEvidence();
-                          }}
-                          style={{
-                            marginTop: "8px",
-                            padding: "6px 12px",
-                            background: "#065f46",
-                            border: "1px solid #047857",
-                            borderRadius: "4px",
-                            color: "#d1fae5",
-                            fontSize: "10px",
-                            cursor: "pointer",
-                          }}
-                        >
-                          + Adicionar Evidência
-                        </button>
-                      </div>
-
-                      {/* Edit Counter-Evidences */}
-                      <div>
-                        <h5 style={{
-                          margin: "0 0 8px 0",
-                          fontSize: "11px",
-                          fontWeight: 600,
-                          color: "#f8fafc",
-                        }}>
-                          Contra-Evidências:
-                        </h5>
-                        {evidenceData.get(selectedNodeId)!.counterEvidences.map((evidence, index) => (
-                          <div key={evidence.id} style={{ marginBottom: "8px", display: "flex", gap: "8px", alignItems: "center" }}>
-                            <input
-                              type="text"
-                              value={evidence.text}
-                              onChange={(e) => {
-                                const nodeEv = evidenceData.get(selectedNodeId);
-                                if (!nodeEv) return;
-                                const updated = {
-                                  ...nodeEv,
-                                  counterEvidences: nodeEv.counterEvidences.map((ev, i) =>
-                                    i === index ? { ...ev, text: e.target.value } : ev
-                                  ),
-                                };
-                                setEvidenceData(new Map(evidenceData.set(selectedNodeId, updated)));
-                                debouncedSaveEvidence();
-                              }}
-                              style={{
-                                flex: 1,
-                                padding: "6px 8px",
-                                background: "#1e293b",
-                                border: "1px solid #334155",
-                                borderRadius: "4px",
-                                color: "#f8fafc",
-                                fontSize: "11px",
-                              }}
-                              placeholder="Texto da contra-evidência"
-                            />
-                            <button
-                              onClick={() => {
-                                const nodeEv = evidenceData.get(selectedNodeId);
-                                if (!nodeEv) return;
-                                const updated = {
-                                  ...nodeEv,
-                                  counterEvidences: nodeEv.counterEvidences.filter((_, i) => i !== index),
-                                };
-                                setEvidenceData(new Map(evidenceData.set(selectedNodeId, updated)));
-                                debouncedSaveEvidence();
-                              }}
-                              style={{
-                                padding: "6px 10px",
-                                background: "#7f1d1d",
-                                border: "1px solid #991b1b",
-                                borderRadius: "4px",
-                                color: "#fee2e2",
-                                fontSize: "10px",
-                                cursor: "pointer",
-                              }}
-                            >
-                              Remover
-                            </button>
-                          </div>
-                        ))}
-                        <button
-                          onClick={() => {
-                            const nodeEv = evidenceData.get(selectedNodeId);
-                            if (!nodeEv) return;
-                            const newId = `${selectedNodeId}-cev${nodeEv.counterEvidences.length + 1}`;
-                            const updated = {
-                              ...nodeEv,
-                              counterEvidences: [...nodeEv.counterEvidences, { id: newId, text: "", checked: false }],
-                            };
-                            setEvidenceData(new Map(evidenceData.set(selectedNodeId, updated)));
-                            debouncedSaveEvidence();
-                          }}
-                          style={{
-                            marginTop: "8px",
-                            padding: "6px 12px",
-                            background: "#065f46",
-                            border: "1px solid #047857",
-                            borderRadius: "4px",
-                            color: "#d1fae5",
-                            fontSize: "10px",
-                            cursor: "pointer",
-                          }}
-                        >
-                          + Adicionar Contra-Evidência
-                        </button>
-                      </div>
-
-                      {/* Export JSON - Development Only */}
-                      {(window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || import.meta.env.DEV) && (
-                        <div style={{ marginTop: "20px", paddingTop: "16px", borderTop: "1px solid #334155" }}>
+                    {/* Edit Evidences */}
+                    <div style={{ marginBottom: "20px" }}>
+                      <h5 style={{
+                        margin: "0 0 8px 0",
+                        fontSize: "11px",
+                        fontWeight: 600,
+                        color: "#f8fafc",
+                      }}>
+                        Evidências:
+                      </h5>
+                      {evidenceData.get(selectedNodeId)!.evidences.map((evidence, index) => (
+                        <div key={evidence.id} style={{ marginBottom: "8px", display: "flex", gap: "8px", alignItems: "center" }}>
+                          <input
+                            type="text"
+                            value={evidence.text}
+                            onChange={(e) => {
+                              const nodeEv = evidenceData.get(selectedNodeId);
+                              if (!nodeEv) return;
+                              const updated = {
+                                ...nodeEv,
+                                evidences: nodeEv.evidences.map((ev, i) =>
+                                  i === index ? { ...ev, text: e.target.value } : ev
+                                ),
+                              };
+                              setEvidenceData(new Map(evidenceData.set(selectedNodeId, updated)));
+                              debouncedSaveEvidence();
+                            }}
+                            style={{
+                              flex: 1,
+                              padding: "6px 8px",
+                              background: "#1e293b",
+                              border: "1px solid #334155",
+                              borderRadius: "4px",
+                              color: "#f8fafc",
+                              fontSize: "11px",
+                            }}
+                            placeholder="Texto da evidência"
+                          />
                           <button
                             onClick={() => {
                               const nodeEv = evidenceData.get(selectedNodeId);
                               if (!nodeEv) return;
-                              const json = JSON.stringify(nodeEv, null, 2);
-                              navigator.clipboard.writeText(json);
-                              alert("JSON copiado para a área de transferência!");
+                              const updated = {
+                                ...nodeEv,
+                                evidences: nodeEv.evidences.filter((_, i) => i !== index),
+                              };
+                              setEvidenceData(new Map(evidenceData.set(selectedNodeId, updated)));
+                              debouncedSaveEvidence();
                             }}
                             style={{
-                              width: "100%",
-                              padding: "8px",
-                              background: "#1e3a8a",
-                              border: "1px solid #1e40af",
+                              padding: "6px 10px",
+                              background: "#7f1d1d",
+                              border: "1px solid #991b1b",
                               borderRadius: "4px",
-                              color: "#dbeafe",
+                              color: "#fee2e2",
                               fontSize: "10px",
                               cursor: "pointer",
-                              marginBottom: "8px",
                             }}
                           >
-                            📋 Copiar JSON das Evidências
+                            Remover
                           </button>
                         </div>
-                      )}
+                      ))}
+                      <button
+                        onClick={() => {
+                          const nodeEv = evidenceData.get(selectedNodeId);
+                          if (!nodeEv) return;
+                          const newId = `${selectedNodeId}-ev${nodeEv.evidences.length + 1}`;
+                          const updated = {
+                            ...nodeEv,
+                            evidences: [...nodeEv.evidences, { id: newId, text: "", checked: false }],
+                          };
+                          setEvidenceData(new Map(evidenceData.set(selectedNodeId, updated)));
+                          debouncedSaveEvidence();
+                        }}
+                        style={{
+                          marginTop: "8px",
+                          padding: "6px 12px",
+                          background: "#065f46",
+                          border: "1px solid #047857",
+                          borderRadius: "4px",
+                          color: "#d1fae5",
+                          fontSize: "10px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        + Adicionar Evidência
+                      </button>
                     </div>
+
+                    {/* Edit Counter-Evidences */}
+                    <div>
+                      <h5 style={{
+                        margin: "0 0 8px 0",
+                        fontSize: "11px",
+                        fontWeight: 600,
+                        color: "#f8fafc",
+                      }}>
+                        Contra-Evidências:
+                      </h5>
+                      {evidenceData.get(selectedNodeId)!.counterEvidences.map((evidence, index) => (
+                        <div key={evidence.id} style={{ marginBottom: "8px", display: "flex", gap: "8px", alignItems: "center" }}>
+                          <input
+                            type="text"
+                            value={evidence.text}
+                            onChange={(e) => {
+                              const nodeEv = evidenceData.get(selectedNodeId);
+                              if (!nodeEv) return;
+                              const updated = {
+                                ...nodeEv,
+                                counterEvidences: nodeEv.counterEvidences.map((ev, i) =>
+                                  i === index ? { ...ev, text: e.target.value } : ev
+                                ),
+                              };
+                              setEvidenceData(new Map(evidenceData.set(selectedNodeId, updated)));
+                              debouncedSaveEvidence();
+                            }}
+                            style={{
+                              flex: 1,
+                              padding: "6px 8px",
+                              background: "#1e293b",
+                              border: "1px solid #334155",
+                              borderRadius: "4px",
+                              color: "#f8fafc",
+                              fontSize: "11px",
+                            }}
+                            placeholder="Texto da contra-evidência"
+                          />
+                          <button
+                            onClick={() => {
+                              const nodeEv = evidenceData.get(selectedNodeId);
+                              if (!nodeEv) return;
+                              const updated = {
+                                ...nodeEv,
+                                counterEvidences: nodeEv.counterEvidences.filter((_, i) => i !== index),
+                              };
+                              setEvidenceData(new Map(evidenceData.set(selectedNodeId, updated)));
+                              debouncedSaveEvidence();
+                            }}
+                            style={{
+                              padding: "6px 10px",
+                              background: "#7f1d1d",
+                              border: "1px solid #991b1b",
+                              borderRadius: "4px",
+                              color: "#fee2e2",
+                              fontSize: "10px",
+                              cursor: "pointer",
+                            }}
+                          >
+                            Remover
+                          </button>
+                        </div>
+                      ))}
+                      <button
+                        onClick={() => {
+                          const nodeEv = evidenceData.get(selectedNodeId);
+                          if (!nodeEv) return;
+                          const newId = `${selectedNodeId}-cev${nodeEv.counterEvidences.length + 1}`;
+                          const updated = {
+                            ...nodeEv,
+                            counterEvidences: [...nodeEv.counterEvidences, { id: newId, text: "", checked: false }],
+                          };
+                          setEvidenceData(new Map(evidenceData.set(selectedNodeId, updated)));
+                          debouncedSaveEvidence();
+                        }}
+                        style={{
+                          marginTop: "8px",
+                          padding: "6px 12px",
+                          background: "#065f46",
+                          border: "1px solid #047857",
+                          borderRadius: "4px",
+                          color: "#d1fae5",
+                          fontSize: "10px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        + Adicionar Contra-Evidência
+                      </button>
+                    </div>
+
+                    {/* Export JSON - Development Only */}
+                    {(window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || import.meta.env.DEV) && (
+                      <div style={{ marginTop: "20px", paddingTop: "16px", borderTop: "1px solid #334155" }}>
+                        <button
+                          onClick={() => {
+                            const nodeEv = evidenceData.get(selectedNodeId);
+                            if (!nodeEv) return;
+                            const json = JSON.stringify(nodeEv, null, 2);
+                            navigator.clipboard.writeText(json);
+                            alert("JSON copiado para a área de transferência!");
+                          }}
+                          style={{
+                            width: "100%",
+                            padding: "8px",
+                            background: "#1e3a8a",
+                            border: "1px solid #1e40af",
+                            borderRadius: "4px",
+                            color: "#dbeafe",
+                            fontSize: "10px",
+                            cursor: "pointer",
+                            marginBottom: "8px",
+                          }}
+                        >
+                          📋 Copiar JSON das Evidências
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </>
               ) : (
                 <div style={{
