@@ -861,7 +861,7 @@ const App: React.FC = () => {
                             fontWeight: 600,
                             color: "#94a3b8",
                             marginBottom: "6px",
-                            paddingLeft: "20px",
+                            paddingLeft: "8px",
                             display: "flex",
                             alignItems: "center",
                             gap: "6px",
@@ -1000,20 +1000,11 @@ const App: React.FC = () => {
                                 {scenarioAnalyses.length > 0 && isExpanded && (
                                   <ul style={{
                                     listStyle: "none",
-                                    padding: 0,
                                     margin: "2px 0 0 0",
-                                    paddingLeft: "40px",
+                                    paddingLeft: "0",
                                     position: "relative",
                                   }}>
-                                    {/* Vertical line for children */}
-                                    <div style={{
-                                      position: "absolute",
-                                      left: "20px",
-                                      top: 0,
-                                      bottom: 0,
-                                      width: "1px",
-                                      background: "#334155",
-                                    }} />
+                                    {/* Vertical line for children removed to allow incomplete lines */}
                                     {scenarioAnalyses.map((analysis, childIndex) => {
                                       const isAnalysisActive = analysis.id === selectedScenarioId;
                                       const isAnalysisEditing = editingAnalysisTitle?.id === analysis.id;
@@ -1024,7 +1015,7 @@ const App: React.FC = () => {
                                           {/* Vertical line for children */}
                                           <div style={{
                                             position: "absolute",
-                                            left: "20px",
+                                            left: "28px",
                                             top: 0,
                                             bottom: isLastChild ? "50%" : 0,
                                             width: "1px",
@@ -1033,7 +1024,7 @@ const App: React.FC = () => {
                                           {/* Horizontal line */}
                                           <div style={{
                                             position: "absolute",
-                                            left: "20px",
+                                            left: "28px",
                                             top: "12px",
                                             width: "12px",
                                             height: "1px",
@@ -1041,7 +1032,7 @@ const App: React.FC = () => {
                                           }} />
 
                                           {isAnalysisEditing ? (
-                                            <div style={{ display: "flex", gap: "6px", padding: "4px", marginLeft: "32px" }}>
+                                            <div style={{ display: "flex", gap: "6px", padding: "4px", marginLeft: "40px" }}>
                                               <input
                                                 type="text"
                                                 value={editingAnalysisTitle.title}
@@ -1114,7 +1105,7 @@ const App: React.FC = () => {
                                                 width: "100%",
                                                 textAlign: "left",
                                                 padding: "4px 8px",
-                                                marginLeft: "32px",
+                                                marginLeft: "40px",
                                                 background: isAnalysisActive ? "rgba(59, 130, 246, 0.15)" : "transparent",
                                                 color: isAnalysisActive ? "#60a5fa" : "#94a3b8",
                                                 border: "none",
@@ -1727,16 +1718,6 @@ const App: React.FC = () => {
 
                   {/* Edit Evidences */}
                   <div style={{ marginTop: "32px", paddingTop: "24px", borderTop: "1px solid #334155" }}>
-                    <h4 style={{
-                      margin: "0 0 16px 0",
-                      fontSize: "12px",
-                      fontWeight: 600,
-                      color: "#f8fafc",
-                      letterSpacing: "0.05em",
-                    }}>
-                      ✏️ Editar Evidências
-                    </h4>
-
                     {/* Edit Evidences */}
                     <div style={{ marginBottom: "20px" }}>
                       <h5 style={{
@@ -1813,7 +1794,7 @@ const App: React.FC = () => {
                           debouncedSaveEvidence();
                         }}
                         style={{
-                          marginTop: "8px",
+                          marginTop: "4px",
                           padding: "6px 12px",
                           background: "#065f46",
                           border: "1px solid #047857",
@@ -1903,7 +1884,7 @@ const App: React.FC = () => {
                           debouncedSaveEvidence();
                         }}
                         style={{
-                          marginTop: "8px",
+                          marginTop: "4px",
                           padding: "6px 12px",
                           background: "#065f46",
                           border: "1px solid #047857",
